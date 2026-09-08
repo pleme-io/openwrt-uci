@@ -29,6 +29,7 @@
 //! constructs itself.
 
 use crate::{HostKeyPolicy, Output, Transport, TransportError};
+use std::io::Write as _;
 use std::process::Command;
 
 /// Where a device is and how to reach it.
@@ -50,17 +51,46 @@ pub struct SshTarget {
 }
 
 impl SshTarget {
-    /// A target with the safe defaults: pinned host key, 10s timeout.
+    /// A target with a 10s timeout and an explicitly named host-key policy.
+    ///
+    /// The policy is a parameter rather than a default for the same reason
+    /// [`HostKeyPolicy`] has no `Default`: the right answer differs between a
+    /// factory device on a cable and a router across the internet, and a
+    /// constructor that picked one would make the choice invisible.
+    ///
+    /// This signature is deliberate. It used to take a `fingerprint: &str` and
+    /// build `Pinned(fingerprint)` — which meant `SshTarget::new(u, h, "")`
+    /// compiled, produced an empty pin, and reported `verifies_identity() ==
+    /// true`. The integration harness did exactly that.
     #[must_use]
-    pub fn new(user: &str, host: &str, fingerprint: &str) -> Self {
+    pub fn new(user: &str, host: &str, host_key_policy: HostKeyPolicy) -> Self {
         Self {
             host: host.to_owned(),
             user: user.to_owned(),
             port: None,
             jump: None,
             identity: None,
-            host_key_policy: HostKeyPolicy::Pinned(fingerprint.to_owned()),
+            host_key_policy,
             connect_timeout_secs: 10,
+        }
+    }
+
+    /// The `known_hosts` line this target's pinned key must be written as.
+    ///
+    /// The host prefix comes from the target, never from the caller, so a
+    /// pinned key cannot be recorded against the wrong host. A non-default
+    /// port is written `[host]:port`, which is the form `ssh` looks up.
+    #[must_use]
+    pub fn known_hosts_line(&self) -> Option<String> {
+        match &self.host_key_policy {
+            HostKeyPolicy::Pinned { host_key, .. } => {
+                let hostspec = match self.port {
+                    Some(p) => format!("[{}]:{}", self.host, p),
+                    None => self.host.clone(),
+                };
+                Some(format!("{hostspec} {}", host_key.trim()))
+            }
+            _ => None,
         }
     }
 
@@ -94,13 +124,50 @@ impl SshTarget {
         a.push("-o".into());
         a.push(format!("ConnectTimeout={}", self.connect_timeout_secs));
 
+        // ★ MEASURED 2026-09-08, and it defeats every policy below.
+        //
+        // An inherited `ControlMaster auto` reuses an existing multiplexed
+        // connection, and a reused connection performs NO host-key
+        // verification — the handshake already happened. So a wrong pin
+        // *connects successfully* whenever a master socket exists, and none of
+        // the flags below are ever consulted.
+        //
+        // This was not theorised. The operator's ssh_config carries
+        // `ControlMaster auto` with `ControlPersist 86400`, and with a live
+        // `/tmp/ssh-control-root@192.168.8.1:22` the deliberately-wrong-key
+        // test returned exit 0 with empty output, the whole 6-test suite
+        // finishing in 0.12s at an 80ms RTT — reuse is what that timing means.
+        //
+        // A transport must therefore own its multiplexing rather than inherit
+        // it. `ControlPath=none` is the load-bearing half: it refuses both
+        // using and creating a socket, so each connection is verified on its
+        // own merits. Without this, `HostKeyPolicy` is decorative.
+        a.push("-o".into());
+        a.push("ControlMaster=no".into());
+        a.push("-o".into());
+        a.push("ControlPath=none".into());
+
         match &self.host_key_policy {
-            HostKeyPolicy::Pinned(_) => {
-                // Strict: the key must already be trusted. The fingerprint
-                // itself is verified by ssh against known_hosts; we do not
-                // re-implement that comparison.
+            HostKeyPolicy::Pinned { known_hosts, .. } => {
+                // Three flags, and all three are load-bearing.
+                //
+                // `StrictHostKeyChecking=yes` refuses an unknown or changed
+                // key instead of recording it. On its own, though, it verifies
+                // against whichever known_hosts files ssh would consult
+                // anyway — which is how the previous version of this arm let a
+                // wrong pin succeed.
+                //
+                // `UserKnownHostsFile` redirects it to the file our pinned key
+                // is written into, and `GlobalKnownHostsFile=/dev/null` stops
+                // `/etc/ssh/ssh_known_hosts` from satisfying the check on the
+                // pin's behalf. Without both, "pinned" means "pinned, or
+                // whatever this machine already trusted".
                 a.push("-o".into());
                 a.push("StrictHostKeyChecking=yes".into());
+                a.push("-o".into());
+                a.push(format!("UserKnownHostsFile={}", known_hosts.display()));
+                a.push("-o".into());
+                a.push("GlobalKnownHostsFile=/dev/null".into());
             }
             HostKeyPolicy::TrustOnFirstUse { known_hosts } => {
                 a.push("-o".into());
@@ -177,11 +244,64 @@ impl SshTransport {
             .map(|_| ())
             .map_err(|e| TransportError::Unreachable(format!("no `ssh` on PATH: {e}")))
     }
+
+    /// Ensure a pinned key is present in the file `ssh` will consult.
+    ///
+    /// Appends rather than overwrites, so one `known_hosts` can hold pins for
+    /// a whole fleet of routers, and is idempotent on the exact line so
+    /// repeated calls do not grow the file.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TransportError::Unreachable`] if the file cannot be created
+    /// or read. That is the honest classification: the device may be perfectly
+    /// fine, but we cannot establish a verified channel to it, so we must not
+    /// proceed and must not pretend the failure was remote.
+    fn materialize_pin(&self) -> Result<(), TransportError> {
+        let (Some(line), HostKeyPolicy::Pinned { known_hosts, .. }) =
+            (self.target.known_hosts_line(), &self.target.host_key_policy)
+        else {
+            return Ok(());
+        };
+
+        let io_err = |e: std::io::Error| {
+            TransportError::Unreachable(format!(
+                "cannot write the pinned host key to {}: {e}",
+                known_hosts.display()
+            ))
+        };
+
+        if let Some(parent) = known_hosts.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent).map_err(io_err)?;
+        }
+
+        let existing = match std::fs::read_to_string(known_hosts) {
+            Ok(s) => s,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
+            Err(e) => return Err(io_err(e)),
+        };
+        if existing.lines().any(|l| l.trim() == line) {
+            return Ok(());
+        }
+
+        let mut f = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(known_hosts)
+            .map_err(io_err)?;
+        writeln!(f, "{line}").map_err(io_err)
+    }
 }
 
 impl Transport for SshTransport {
     fn exec(&mut self, command: &str) -> Result<Output, TransportError> {
         self.calls.push(command.to_owned());
+
+        // A pin that is never written down is not a pin. `args()` points ssh
+        // at `known_hosts` and nulls the global file, so if the pinned key is
+        // not in that file the connection fails closed — which is the correct
+        // direction, but only useful if the key gets there.
+        self.materialize_pin()?;
 
         let mut cmd = Command::new("ssh");
         for a in self.target.args() {
@@ -206,7 +326,7 @@ impl Transport for SshTransport {
             if lower.contains("host key verification failed") {
                 return Err(TransportError::HostKeyRejected {
                     expected: match &self.target.host_key_policy {
-                        HostKeyPolicy::Pinned(f) => f.clone(),
+                        HostKeyPolicy::Pinned { host_key, .. } => host_key.clone(),
                         other => format!("{other:?}"),
                     },
                     presented: stderr.trim().to_owned(),

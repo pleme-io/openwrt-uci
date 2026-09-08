@@ -121,7 +121,13 @@ fn the_mock_refuses_unscripted_commands() {
 fn accept_any_is_the_only_policy_that_does_not_verify() {
     // The whole point of the type: a caller can refuse to write credentials
     // over an unverified channel without re-deriving what "unverified" means.
-    assert!(HostKeyPolicy::Pinned("SHA256:abc".into()).verifies_identity());
+    assert!(
+        HostKeyPolicy::Pinned {
+            host_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITESTKEY".into(),
+            known_hosts: "/tmp/kh".into(),
+        }
+        .verifies_identity()
+    );
     assert!(
         HostKeyPolicy::TrustOnFirstUse {
             known_hosts: "/tmp/kh".into()

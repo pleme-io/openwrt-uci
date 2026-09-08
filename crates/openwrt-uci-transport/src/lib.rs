@@ -47,9 +47,31 @@ pub use ssh::{SshTarget, SshTransport};
 /// silently pick one of them.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HostKeyPolicy {
-    /// Require this exact key fingerprint. The correct policy for any device
-    /// that has been bootstrapped and has a recorded identity.
-    Pinned(String),
+    /// Require this exact host key. The correct policy for any device that has
+    /// been bootstrapped and has a recorded identity.
+    ///
+    /// # Why this holds a KEY and not a fingerprint
+    ///
+    /// It used to be `Pinned(String)` holding a `SHA256:…` fingerprint, and it
+    /// **did not pin anything**: the fingerprint never reached `ssh`'s argv, so
+    /// the real check was whatever the invoking user's ambient
+    /// `~/.ssh/known_hosts` happened to say. Measured 2026-09-08 — a live sshd
+    /// accepted a connection under `Pinned("SHA256:0000…")`.
+    ///
+    /// The defect was not a missing comparison, it was an impossible one: a
+    /// fingerprint is a *hash*, so there is no way to hand it to `ssh` and ask
+    /// it to trust that host. Pinning has to name the key itself.
+    ///
+    /// `host_key` is the key only — `"ssh-ed25519 AAAAC3Nza…"`, as printed by
+    /// `ssh-keyscan`, with **no host prefix**; the host is prepended when the
+    /// line is written, so it cannot disagree with the target. It is
+    /// materialized into `known_hosts`, and that file plus a nulled global file
+    /// are the only ones `ssh` consults — so the pin is what decides, and the
+    /// ambient `known_hosts` cannot satisfy the check on its behalf.
+    Pinned {
+        host_key: String,
+        known_hosts: std::path::PathBuf,
+    },
 
     /// Accept whatever key is presented on first contact, record it, and
     /// require it to match thereafter.

@@ -18,29 +18,119 @@
 //! policy maps to flags `ssh` actually accepts, and that a real `uci export`
 //! parses. Those are four separate ways to be wrong that no unit test reaches.
 
-use openwrt_uci_transport::{HostKeyPolicy, SshTarget, SshTransport, Transport, UciReader};
+use openwrt_uci_transport::{
+    HostKeyPolicy, SshTarget, SshTransport, Transport, TransportError, UciReader,
+};
 
 /// Build a target from the environment, or skip.
 ///
 /// Returns `None` rather than panicking when unset: an unconfigured run should
 /// be a skip, not a failure, or people start ignoring the suite.
+fn policy_from_env() -> HostKeyPolicy {
+    // Preferred: a real pin. `OPENWRT_TEST_HOST_KEY` takes the key as
+    // `ssh-keyscan` prints it — the KEY, not a fingerprint, because a
+    // fingerprint is a hash and cannot be handed to ssh to trust.
+    match (
+        std::env::var("OPENWRT_TEST_HOST_KEY"),
+        std::env::var("OPENWRT_TEST_KNOWN_HOSTS"),
+    ) {
+        (Ok(host_key), Ok(kh)) => HostKeyPolicy::Pinned {
+            host_key,
+            known_hosts: kh.into(),
+        },
+        (Ok(host_key), Err(_)) => HostKeyPolicy::Pinned {
+            host_key,
+            known_hosts: std::env::temp_dir().join("openwrt-uci-pin-known-hosts"),
+        },
+        (Err(_), Ok(kh)) => HostKeyPolicy::TrustOnFirstUse {
+            known_hosts: kh.into(),
+        },
+        (Err(_), Err(_)) => HostKeyPolicy::AcceptAnyInsecure {
+            justification: "explicit opt-in integration test against a device on a trusted LAN",
+        },
+    }
+}
+
+/// Build a target from the environment, or skip.
 fn target_from_env() -> Option<SshTarget> {
+    target_with_policy(policy_from_env())
+}
+
+fn target_with_policy(policy: HostKeyPolicy) -> Option<SshTarget> {
     let host = std::env::var("OPENWRT_TEST_HOST").ok()?;
     let user = std::env::var("OPENWRT_TEST_USER").unwrap_or_else(|_| "root".to_owned());
 
-    let mut t = SshTarget::new(&user, &host, "");
-    t.host_key_policy = match std::env::var("OPENWRT_TEST_KNOWN_HOSTS") {
-        Ok(kh) => HostKeyPolicy::TrustOnFirstUse {
-            known_hosts: kh.into(),
-        },
-        Err(_) => HostKeyPolicy::AcceptAnyInsecure {
-            justification: "explicit opt-in integration test against a device on a trusted LAN",
-        },
-    };
+    let mut t = SshTarget::new(&user, &host, policy);
     if let Ok(j) = std::env::var("OPENWRT_TEST_JUMP") {
         t = t.via_jump(&j);
     }
     Some(t)
+}
+
+/// ★ The red-run the plan's §9 has always required and never had: prove the
+/// host-key policy REJECTS a key that is not the pinned one.
+///
+/// A happy-path test proves nothing here. The defect being guarded against was
+/// a `Pinned` arm that discarded its key and verified against ambient trust —
+/// under which this test's *wrong* key still connects successfully, because the
+/// pin was never consulted. So this asserts the failure, and it must fail for
+/// the right reason: `HostKeyRejected`, not `AuthFailed` or `Unreachable`.
+#[test]
+#[ignore = "needs a real OpenWrt device; see module docs"]
+fn a_wrong_pinned_key_is_rejected() {
+    // A syntactically valid ed25519 line that is definitely not the device's.
+    let wrong = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    let kh = std::env::temp_dir().join("openwrt-uci-wrong-pin-known-hosts");
+    let _ = std::fs::remove_file(&kh);
+
+    let Some(target) = target_with_policy(HostKeyPolicy::Pinned {
+        host_key: wrong.to_owned(),
+        known_hosts: kh.clone(),
+    }) else {
+        eprintln!("OPENWRT_TEST_HOST unset — skipping");
+        return;
+    };
+
+    let mut transport = SshTransport::new(target);
+    let result = transport.exec("true");
+    let _ = std::fs::remove_file(&kh);
+
+    match result {
+        Err(TransportError::HostKeyRejected { .. }) => {
+            eprintln!("  wrong pin correctly rejected");
+        }
+        Err(other) => panic!("expected HostKeyRejected, got {other:?}"),
+        Ok(out) => panic!(
+            "★ A WRONG PINNED KEY CONNECTED SUCCESSFULLY — the pin is not being \
+             enforced. This is the exact defect measured on 2026-09-08. Output: {out:?}"
+        ),
+    }
+}
+
+/// The other half: the *correct* pinned key must connect. Without this, the
+/// test above passes trivially for a policy that rejects everything.
+#[test]
+#[ignore = "needs a real OpenWrt device; see module docs"]
+fn the_correct_pinned_key_connects() {
+    let Ok(host_key) = std::env::var("OPENWRT_TEST_HOST_KEY") else {
+        eprintln!("OPENWRT_TEST_HOST_KEY unset — skipping the positive pin case");
+        return;
+    };
+    let kh = std::env::temp_dir().join("openwrt-uci-good-pin-known-hosts");
+    let _ = std::fs::remove_file(&kh);
+
+    let Some(target) = target_with_policy(HostKeyPolicy::Pinned {
+        host_key,
+        known_hosts: kh.clone(),
+    }) else {
+        return;
+    };
+    let mut transport = SshTransport::new(target);
+    let out = transport.exec("echo pinned-ok");
+    let _ = std::fs::remove_file(&kh);
+
+    let out = out.expect("the correct pinned key must connect");
+    assert_eq!(out.stdout.trim(), "pinned-ok");
 }
 
 #[test]
