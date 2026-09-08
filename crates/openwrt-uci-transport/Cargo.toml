@@ -1,0 +1,21 @@
+[package]
+name = "openwrt-uci-transport"
+description = "Transport abstraction for reaching an OpenWrt device (SSH, ubus), with typed host-key policy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+# The transport lives in its OWN crate so that `openwrt-uci` — the document
+# model — stays dependency-free. Someone who only wants to parse a `uci export`
+# file should not compile an SSH client to do it.
+[dependencies]
+openwrt-uci = { path = "../openwrt-uci", version = "0.1.0" }
+
+[lints]
+workspace = true

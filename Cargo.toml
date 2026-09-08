@@ -1,0 +1,26 @@
+[workspace]
+resolver = "3"
+members = ["crates/openwrt-uci", "crates/openwrt-uci-transport", "crates/ubus-proto"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/pleme-io/openwrt-uci"
+homepage = "https://github.com/pleme-io/openwrt-uci"
+documentation = "https://docs.rs/openwrt-uci"
+readme = "README.md"
+categories = ["config", "network-programming", "parser-implementations"]
+keywords = ["openwrt", "uci", "router", "ubus", "configuration"]
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "z"
+strip = true

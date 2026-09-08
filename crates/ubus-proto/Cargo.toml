@@ -1,0 +1,19 @@
+[package]
+name = "ubus-proto"
+description = "Pure-Rust codec for the OpenWrt ubus wire protocol (blob_attr / blobmsg)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme = "PROTOCOL.md"
+categories.workspace = true
+keywords.workspace = true
+
+# Zero dependencies, and no C linkage. ubus is a protocol on a unix socket,
+# not a library that must be linked -- this crate speaks it.
+[dependencies]
+
+[lints]
+workspace = true

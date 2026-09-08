@@ -1,0 +1,24 @@
+[package]
+name = "openwrt-uci"
+description = "Typed model, parser and renderer for OpenWrt UCI configuration"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+# Deliberately zero dependencies.
+#
+# This is the foundational layer every other crate here builds on, and a router
+# SDK is exactly the kind of thing people vendor into constrained environments.
+# The UCI grammar is five line shapes; it does not need a parser generator, and
+# a dependency-free core is the difference between "we could adopt this" and
+# "we'd have to audit its tree first".
+[dependencies]
+
+[lints]
+workspace = true

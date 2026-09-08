@@ -1,0 +1,2871 @@
+package TRL
+
+config TRLConfig 'TRL'
+	option ipv6 '1'
+	option enable '0'
+	option oem 'glinet'
+	option modelNum 'MT6000'
+	option status 'connecting'
+
+package adguardhome
+
+config adguardhome 'config'
+	option enabled '0'
+
+package apnprofile
+
+config rule 'visible'
+	option apn 'VSBLINTERNET'
+	option protocol 'qcm'
+	option description 'VISIBLE'
+	option apn_use '3'
+	option apns '["VSBLIMS","VSBLADMIN","","VSBLAPP"]'
+
+config rule 'verizon'
+	option apn 'VZWINTERNET'
+	option protocol 'qcm'
+	option description 'VERIZON'
+	option apn_use '3'
+	option apns '["ims","vzwadmin","","vzwapp"]'
+
+config rule 'orange'
+	option apn 'net'
+	option protocol 'qcm'
+	option description 'ORANGE'
+	option apn_use '5'
+
+config rule 'telstra'
+	option apn 'telstra.wap'
+	option protocol 'qcm'
+	option description 'TELSTRA'
+	option apn_use '1'
+	option apns '["","ims","sos"]'
+
+package board_special
+
+config service 'hardware'
+
+config switch 'switch'
+
+config network 'network'
+	option wan 'eth1'
+	option lan 'lan1 lan2 lan3 lan4 lan5'
+
+package chrony
+
+config pool
+	option maxpoll '12'
+	option iburst 'yes'
+	option nts 'yes'
+	option hostname 'time.cloudflare.com'
+
+config dhcp_ntp_server
+	option iburst 'yes'
+	option disabled 'no'
+
+config allow
+	option interface 'lan'
+
+config makestep
+	option threshold '1.0'
+	option limit '3'
+
+config nts
+	option rtccheck 'yes'
+	option systemcerts 'yes'
+
+config server 'time_nl'
+	option hostname 'ntppool1.time.nl'
+	option iburst 'yes'
+	option nts 'yes'
+
+config server 'netnod'
+	option hostname 'nts.netnod.se'
+	option iburst 'yes'
+	option nts 'yes'
+
+config server 'ptb'
+	option hostname 'ptbtime1.ptb.de'
+	option iburst 'yes'
+	option nts 'yes'
+
+config server 'dfm'
+	option hostname 'time.dfm.dk'
+	option iburst 'yes'
+	option nts 'yes'
+
+config server 'cifelli'
+	option hostname 'time.cifelli.xyz'
+	option iburst 'yes'
+	option nts 'yes'
+
+package custom_apn
+
+config apn 'verizon'
+	option apns '["vzwinternet", "v5ga01internet"]'
+
+config apn 'verizon_4g'
+	option apns '["vzwinternet"]'
+
+package dhcp
+
+config dnsmasq
+	option domainneeded '1'
+	option filterwin2k '0'
+	option localise_queries '1'
+	option rebind_localhost '1'
+	option local '/lan/'
+	option domain 'lan'
+	option expandhosts '1'
+	option nonegcache '0'
+	option authoritative '1'
+	option readethers '1'
+	option leasefile '/tmp/dhcp.leases'
+	option resolvfile '/tmp/resolv.conf.d/resolv.conf.auto'
+	option nonwildcard '1'
+	option localservice '1'
+	option ednspacket_max '1232'
+	option confdir '/tmp/dnsmasq.d'
+	option rebind_protection '0'
+	option filter_aaaa '1'
+
+config dhcp 'lan'
+	option interface 'lan'
+	option start '100'
+	option limit '150'
+	option leasetime '12h'
+	option dhcpv4 'server'
+	option ra_slaac '1'
+	option force '1'
+	option dhcpv6 'disabled'
+	option ra 'disabled'
+
+config dhcp 'wan'
+	option interface 'wan'
+	option ignore '1'
+
+config dhcp 'guest'
+	option interface 'guest'
+	option start '100'
+	option limit '150'
+	option leasetime '12h'
+	option dhcpv6 'disabled'
+	option ra 'disabled'
+	option force '1'
+
+config odhcpd 'odhcpd'
+	option maindhcp '0'
+	option leasefile '/tmp/hosts/odhcpd'
+	option leasetrigger '/usr/sbin/odhcpd-update'
+	option loglevel '4'
+
+config domain
+	option name 'console.gl-inet.com'
+	option ip '192.168.8.1'
+
+config domain
+	option name 'console.gl-inet.com'
+	option ip '::ffff:192.168.8.1'
+
+config dhcp 'secondwan'
+	option interface 'secondwan'
+	option ignore '1'
+
+config dhcp 'iot'
+	option interface 'iot'
+	option start '100'
+	option limit '150'
+	option leasetime '12h'
+	option dhcpv6 'disabled'
+	option ra 'disabled'
+	option ndp 'disabled'
+	option force '1'
+
+package dropbear
+
+config dropbear 'main'
+	option PasswordAuth 'on'
+	option RootPasswordAuth 'on'
+	option Port '22'
+	option enable '1'
+
+package edgerouter
+
+config global 'global'
+	option enabled '0'
+	option force_dns '1'
+
+config dhcp 'wandhcp'
+	option leasetime '43200'
+	option ignore '1'
+
+package expressvpn
+
+config expressvpn 'global'
+	option phase 'idle'
+	option agreement_accepted '0'
+	option eligibility 'unknown'
+	option oidc_realm 'https://auth.expressvpn.com/realms/xvpn'
+	option oidc_client_id 'xv_partner_gli_router'
+	option oidc_scopes 'openid'
+	option cp_base 'https://cp.expressapisv2.net'
+	option endpoint_mode 'auto'
+	option subscriptions_base 'https://www.expressvpn.com'
+
+package firewall
+
+config defaults
+	option syn_flood '1'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+
+config zone
+	option name 'lan'
+	list network 'lan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+
+config zone
+	option name 'wan'
+	list network 'wan'
+	list network 'wan6'
+	list network 'wwan'
+	list network 'secondwan'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option masq '1'
+	option mtu_fix '1'
+	option input 'DROP'
+
+config forwarding
+	option src 'lan'
+	option dest 'wan'
+	option enabled '1'
+
+config rule
+	option name 'Allow-DHCP-Renew'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '68'
+	option target 'ACCEPT'
+	option family 'ipv4'
+
+config rule
+	option name 'Allow-IGMP'
+	option src 'wan'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-DHCPv6'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-MLD'
+	option src 'wan'
+	option proto 'icmp'
+	option src_ip 'fe80::/10'
+	list icmp_type '130/0'
+	list icmp_type '131/0'
+	list icmp_type '132/0'
+	list icmp_type '143/0'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Input'
+	option src 'wan'
+	option proto 'icmp'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'neighbour-advertisement'
+
+config rule
+	option name 'Allow-ICMPv6-Forward'
+	option src 'wan'
+	option dest '*'
+	option proto 'icmp'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+
+config rule
+	option name 'Allow-IPSec-ESP'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'esp'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ISAKMP'
+	option src 'wan'
+	option dest 'lan'
+	option dest_port '500'
+	option proto 'udp'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Support-UDP-Traceroute'
+	option src 'wan'
+	option dest_port '33434:33689'
+	option proto 'udp'
+	option family 'ipv4'
+	option target 'REJECT'
+	option enabled 'false'
+
+config include
+	option path '/etc/firewall.user'
+
+config zone
+	option name 'guest'
+	option network 'guest'
+	option forward 'REJECT'
+	option output 'ACCEPT'
+	option input 'REJECT'
+
+config forwarding
+	option src 'guest'
+	option dest 'wan'
+	option enabled '1'
+
+config rule
+	option name 'Allow-DHCP'
+	option src 'guest'
+	option target 'ACCEPT'
+	option proto 'udp'
+	option dest_port '67-68'
+
+config rule
+	option name 'Allow-DNS'
+	option src 'guest'
+	option target 'ACCEPT'
+	option proto 'tcp udp'
+	option dest_port '53'
+
+config include 'nat6'
+	option path '/etc/firewall.nat6'
+	option reload '1'
+
+config include 'dns_order'
+	option type 'script'
+	option path '/etc/firewall.dns_order'
+	option reload '1'
+	option enabled '1'
+
+config include 'vpnclient'
+	option type 'script'
+	option path '/usr/bin/rtp2.sh'
+	option reload '0'
+
+config include 'dmz_exclude'
+	option type 'script'
+	option path '/etc/firewall.dmz.exclude'
+	option reload '1'
+
+config include 'security'
+	option type 'script'
+	option path '/etc/firewall.security'
+	option reload '1'
+
+config rule 'sambasharewan'
+	option src 'wan'
+	option dest_port '137 138 139 445'
+	option dest_proto 'tcpudp'
+	option target 'DROP'
+	option gl_prio '2'
+
+config rule 'sambasharelan'
+	option src 'lan'
+	option dest_port '137 138 139 445'
+	option dest_proto 'tcpudp'
+	option target 'ACCEPT'
+	option gl_prio '2'
+
+config rule 'glnas_ser'
+	option src 'wan'
+	option dest_port '6000-6002'
+	option dest_proto 'tcp'
+	option target 'DROP'
+	option gl_prio '2'
+
+config rule 'webdav_wan'
+	option src 'wan'
+	option dest_port '6008'
+	option dest_proto 'tcp'
+	option target 'DROP'
+	option gl_prio '2'
+
+config zone
+	option name 'iot'
+	option network 'iot'
+	option forward 'REJECT'
+	option output 'ACCEPT'
+	option input 'REJECT'
+
+config forwarding
+	option src 'iot'
+	option dest 'wan'
+
+config rule
+	option name 'Allow-DHCP'
+	option src 'iot'
+	option target 'ACCEPT'
+	option proto 'udp'
+	option dest_port '67-68'
+
+config rule
+	option name 'Allow-DNS'
+	option src 'iot'
+	option target 'ACCEPT'
+	option proto 'tcp udp'
+	option dest_port '53'
+
+config include
+	option enabled '1'
+	option type 'script'
+	option path '/etc/netifyd/iptables-init.sh'
+	option reload '1'
+	option fw4_compatible '1'
+
+config include 'glblock'
+	option type 'script'
+	option path '/usr/bin/gl_block.sh'
+	option reload '1'
+
+config include
+	option type 'script'
+	option path '/etc/firewall.pf'
+	option reload '0'
+
+package fstab
+
+config global
+	option anon_swap '0'
+	option anon_mount '1'
+	option auto_swap '1'
+	option auto_mount '1'
+	option delay_root '5'
+	option check_fs '0'
+
+package fullconenat
+
+config global 'global'
+	option enable '0'
+
+package gl-black_white_list
+
+config global 'global'
+	option enable '1'
+	option mode 'black'
+
+config list 'black'
+
+config list 'white'
+
+config secure_option 'lan'
+	option ap_isolate '0'
+
+config secure_option 'guest'
+	option ap_isolate '1'
+	option wan_isolate '0'
+	option transfer_enable '0'
+
+config secure_option 'iot'
+	option ap_isolate '1'
+	option wan_isolate '0'
+	option transfer_enable '0'
+
+package gl-cloud
+
+config cloud
+	option log 'INFO'
+
+package gl-dns-v2
+
+config dns
+	option mode 'auto'
+	option override_vpn '1'
+	option force_dns '0'
+
+package gl-tertf
+
+config tertf
+	list local_network 'br-lan'
+	list local_network 'br-guest'
+	list local_network 'br-iot'
+
+package gl_block
+
+package gl_category
+
+config netifyd 'dangerous_website'
+	list category 'adult'
+	list category 'gambling'
+	list category 'malware'
+
+config netifyd 'education'
+	list category 'education'
+
+config netifyd 'meeting'
+	list category 'voip'
+	list protocol 'voip'
+
+config netifyd 'work'
+	list category 'remote-desktop'
+	list category 'file-sharing'
+	list category 'mail'
+	list category 'financial'
+	list category 'reference'
+	list protocol 'mail'
+	list protocol 'file-server'
+	list protocol 'file-sharing'
+	list protocol 'remote-desktop'
+
+config netifyd 'webpage'
+	list category 'portal'
+	list category 'business'
+	list protocol 'web'
+
+config netifyd 'game'
+	list category 'games'
+	list protocol 'games'
+
+config netifyd 'social_entertainment'
+	list category 'entertainment'
+	list category 'recreation'
+	list category 'sports'
+	list category 'streaming-media'
+	list category 'social-media'
+	list category 'news'
+	list category 'messaging'
+	list protocol 'media'
+	list protocol 'media-provider'
+	list protocol 'messaging'
+
+config netifyd 'shopping'
+	list category 'shopping'
+
+config netifyd 'advertisement'
+	list category 'advertiser'
+
+config netifyd 'other'
+	list category 'hosting'
+	list category 'cybersecurity'
+	list category 'device-iot'
+	list category 'government'
+	list category 'technology'
+	list category 'telco'
+	list category 'cybersecurity'
+	list category 'vpn-and-proxy'
+	list category 'unclassified'
+	list protocol 'unclassified'
+	list protocol 'infrastructure'
+	list protocol 'proxy'
+	list protocol 'vpn'
+	list protocol 'authentication'
+	list protocol 'database'
+	list protocol 'printing'
+	list protocol 'networking'
+
+package gl_ddns
+
+config service 'ddns'
+	option enabled_ssh '0'
+	option http_port '80'
+	option https_port '443'
+
+package gl_dpi
+
+config gl_dpi 'dpi_config'
+	option expire_time '0'
+	option log 'INFO'
+	option lib_auto_upgrade '0'
+	option ota_auto_upgrade '0'
+	option updateTime '0'
+	option app_close_state '000'
+	option lib_version '20260226_01'
+	option lib_update_time '1785868187'
+
+package gl_dpi_content_protection
+
+config dpi 'content_protection'
+	option enabled '0'
+	list category 'gambling'
+	list category 'adult'
+	list category 'malware'
+
+package gl_dpi_flow_statistics
+
+config global 'global'
+	option enable '0'
+	option type 'app'
+	option time 'day'
+
+package gl_dpi_qos
+
+config dpi 'qos'
+	option prio_enable '0'
+	option prio_mode '1'
+	option upload '0'
+	option download '0'
+
+config dpi 'priority_high'
+
+config dpi 'priority_middle'
+	list category 'meeting'
+	list category 'education'
+	list category 'work'
+	list category 'webpage'
+	list category 'game'
+	list category 'social_entertainment'
+	list category 'shopping'
+	list category 'other'
+
+config dpi 'priority_low'
+
+package gl_led
+
+config led 'global'
+	option led_enable '1'
+	option led_daemon '1'
+
+package gl_logread
+
+config globals 'crash'
+	option record_size '8192'
+
+package gl_s2s
+
+config global 'global'
+	option firewall '1'
+	option enable '0'
+
+package gl_timer
+
+config global 'global'
+	option 2G_func 'turn_onoff'
+	option 5G_func 'turn_onoff'
+	option 6G_func 'turn_onoff'
+	option MLD_func 'turn_onoff'
+	option enable '1'
+
+config timer 'led'
+	option enable '0'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer 'reboot'
+	option enable '0'
+	option hour '03'
+	option min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer '6gwifi'
+	option enable '0'
+	option func 'turn_onoff'
+	option band '6G'
+	option guest '0'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer '5gwifi'
+	option enable '0'
+	option func 'turn_onoff'
+	option band '5G'
+	option guest '0'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer '2gwifi'
+	option enable '0'
+	option func 'turn_onoff'
+	option band '2G'
+	option guest '0'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer '6gguestwifi'
+	option enable '0'
+	option func 'turn_onoff'
+	option band '6G'
+	option guest '1'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer '5gguestwifi'
+	option enable '0'
+	option func 'turn_onoff'
+	option band '5G'
+	option guest '1'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer 'mldwifi'
+	option enable '0'
+	option func 'turn_onoff'
+	option band 'MLD'
+	option guest '0'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer 'mldguestwifi'
+	option enable '0'
+	option func 'turn_onoff'
+	option band 'MLD'
+	option guest '1'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer '2gguestwifi'
+	option enable '0'
+	option func 'turn_onoff'
+	option band '2G'
+	option guest '1'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer '6gtxpowerwifi'
+	option enable '0'
+	option func 'power_switch'
+	option band '6G'
+	option guest '0'
+	option switch_hour '22'
+	option switch_min '00'
+	option switch_power 'Low'
+	option restore_hour '07'
+	option restore_min '00'
+	option restore_power 'Max'
+	option week '0 1 2 3 4 5 6'
+
+config timer '5gtxpowerwifi'
+	option enable '0'
+	option func 'power_switch'
+	option band '5G'
+	option guest '0'
+	option switch_hour '22'
+	option switch_min '00'
+	option switch_power 'Low'
+	option restore_hour '07'
+	option restore_min '00'
+	option restore_power 'Max'
+	option week '0 1 2 3 4 5 6'
+
+config timer '2gtxpowerwifi'
+	option enable '0'
+	option func 'power_switch'
+	option band '2G'
+	option guest '0'
+	option switch_hour '22'
+	option switch_min '00'
+	option switch_power 'Low'
+	option restore_hour '07'
+	option restore_min '00'
+	option restore_power 'Max'
+	option week '0 1 2 3 4 5 6'
+
+config timer 'disk'
+	option enable '0'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer 'langs'
+	option enable '0'
+	option hour '00'
+	option min '00'
+	option week '0 1 2 3 4 5 6'
+
+config timer 'screen'
+	option enable '0'
+	option turnon_hour '07'
+	option turnon_min '00'
+	option turnoff_hour '22'
+	option turnoff_min '00'
+	option week '0 1 2 3 4 5 6'
+
+package glconfig
+
+config service 'general'
+	option mode 'router'
+	list track_ipv6 '2001:4860:4860::8844'
+	list track_ipv6 '2001:4860:4860::8888'
+	list track_ipv6 '2620:0:ccd::2'
+	list track_ipv6 '2620:0:ccc::2'
+	list track_ip '1.1.1.1'
+	list track_ip '8.8.8.8'
+	list track_ip '208.67.222.222'
+	list track_ip '208.67.220.220'
+	option inited '1'
+	option autotimezone '1'
+	option inited_internet '1'
+
+package glforward
+
+config service 'phone'
+	option enable '0'
+	option sms_forward_synced '1'
+
+config service 'email'
+	option enable '0'
+	option sms_forward_synced '1'
+
+package glipv6
+
+config globals 'globals'
+	option enabled '0'
+	option origin_ula_prefix 'fd1e:8328:6475::/48'
+
+config interface 'wan'
+	option interface 'wan'
+	option addrmode 'auto'
+	option dnsmode 'auto'
+
+config interface 'secondwan'
+	option interface 'secondwan'
+	option addrmode 'auto'
+	option dnsmode 'auto'
+
+config interface 'lan'
+	option mode 'nat6'
+	option dnsmode 'auto'
+	option lan_ip6addr 'fd1e:8328:6475::1/64'
+
+package glmodem
+
+config global 'global'
+	option log_level '1'
+
+config switch 'sim'
+	option sim_num '1'
+
+package kmwan
+
+config global 'global'
+	option enable '1'
+	option level 'medium'
+	option sensitivity '3000'
+	option mode 'failover'
+	option inited '1'
+
+config member 'wan'
+	option interface 'wan'
+	option metric '10'
+	option weight '1'
+	option track_mode 'force'
+	option addr_type '4'
+	option disabled '0'
+	option check '1'
+	list tracks 'ping,1.1.1.1'
+	list tracks 'ping,8.8.8.8'
+	list tracks 'ping,208.67.222.222'
+	list tracks 'ping,208.67.220.220'
+
+config member 'wwan'
+	option interface 'wwan'
+	option metric '20'
+	option weight '1'
+	option track_mode 'force'
+	option addr_type '4'
+	option disabled '0'
+	option check '1'
+	list tracks 'ping,1.1.1.1'
+	list tracks 'ping,8.8.8.8'
+	list tracks 'ping,208.67.222.222'
+	list tracks 'ping,208.67.220.220'
+
+config member 'tethering'
+	option interface 'tethering'
+	option metric '30'
+	option weight '1'
+	option track_mode 'force'
+	option addr_type '4'
+	option disabled '0'
+	option check '1'
+	list tracks 'ping,1.1.1.1'
+	list tracks 'ping,8.8.8.8'
+	list tracks 'ping,208.67.222.222'
+	list tracks 'ping,208.67.220.220'
+
+config member 'wan6'
+	option interface 'wan6'
+	option metric '10'
+	option weight '1'
+	option track_mode 'force'
+	option addr_type '6'
+	option disabled '1'
+	list tracks 'ping,2001:4860:4860::8844'
+	list tracks 'ping,2001:4860:4860::8888'
+	list tracks 'ping,2620:0:ccd::2'
+	list tracks 'ping,2620:0:ccc::2'
+
+config member 'wwan6'
+	option interface 'wwan6'
+	option metric '20'
+	option weight '1'
+	option track_mode 'force'
+	option addr_type '6'
+	option disabled '1'
+	list tracks 'ping,2001:4860:4860::8844'
+	list tracks 'ping,2001:4860:4860::8888'
+	list tracks 'ping,2620:0:ccd::2'
+	list tracks 'ping,2620:0:ccc::2'
+
+config member 'tethering6'
+	option interface 'tethering6'
+	option metric '30'
+	option weight '1'
+	option track_mode 'force'
+	option addr_type '6'
+	option disabled '1'
+	list tracks 'ping,2001:4860:4860::8844'
+	list tracks 'ping,2001:4860:4860::8888'
+	list tracks 'ping,2620:0:ccd::2'
+	list tracks 'ping,2620:0:ccc::2'
+
+config member 'modem_1_1_2'
+	option disabled '0'
+	option addr_type '4'
+	option metric '40'
+	option track_mode 'passive'
+	option weight '1'
+	option interface 'modem_1_1_2'
+	list tracks 'ping,1.1.1.1'
+	list tracks 'ping,8.8.8.8'
+	list tracks 'ping,208.67.222.222'
+	list tracks 'ping,208.67.220.220'
+
+config member 'modem_1_1_2_6'
+	option disabled '1'
+	option addr_type '6'
+	option metric '40'
+	option track_mode 'passive'
+	option weight '1'
+	option interface 'modem_1_1_2_6'
+	list tracks 'ping,2001:4860:4860::8844'
+	list tracks 'ping,2001:4860:4860::8888'
+	list tracks 'ping,2620:0:ccd::2'
+	list tracks 'ping,2620:0:ccc::2'
+
+config member 'secondwan'
+	option interface 'secondwan'
+	option addr_type '4'
+	option track_mode 'force'
+	option metric '15'
+	option weight '1'
+	option disabled '0'
+	option check '1'
+	list tracks 'ping,1.1.1.1'
+	list tracks 'ping,8.8.8.8'
+	list tracks 'ping,208.67.222.222'
+	list tracks 'ping,208.67.220.220'
+
+config member 'secondwan6'
+	option interface 'secondwan6'
+	option addr_type '6'
+	option track_mode 'force'
+	option metric '15'
+	option weight '1'
+	option disabled '1'
+	list tracks 'ping,2001:4860:4860::8844'
+	list tracks 'ping,2001:4860:4860::8888'
+	list tracks 'ping,2620:0:ccd::2'
+	list tracks 'ping,2620:0:ccc::2'
+
+package minidlna
+
+config minidlna 'config'
+	option enabled '0'
+	option user 'minidlna'
+	option port '8200'
+	option interface 'br-lan'
+	option db_dir '/var/run/minidlna'
+	option inotify '1'
+	option enable_tivo '0'
+	option wide_links '0'
+	option strict_dlna '0'
+	option notify_interval '900'
+	option serial '12345678'
+	option model_number '1'
+	option root_container '.'
+	option album_art_names 'Cover.jpg/cover.jpg/AlbumArtSmall.jpg/albumartsmall.jpg/AlbumArt.jpg/albumart.jpg/Album.jpg/album.jpg/Folder.jpg/folder.jpg/Thumb.jpg/thumb.jpg'
+	option friendly_name 'GL-mt6000 DLNA Server'
+	list media_dir '/tmp/mountd/disk1_part1'
+
+package mptun
+
+config mptun 'global'
+	option enable '0'
+	option enable_mpifd '1'
+	option mptun 'mptun0'
+	option tcpmark '0x1'
+	option udpmark '0x2'
+	option lanmark '0x4'
+	option dnsmark '0x8'
+	option mode '0'
+	option node 'default'
+	option base_url 'https://api.astrowarp.net'
+
+config mptun 'config'
+	option profile '/etc/mptun/mpnet.json'
+	option sys_resolvfile '/tmp/resolv.conf.d/resolv.conf.auto'
+
+config interface 'wan'
+	option enable '1'
+	option metric '1'
+	list mptcp_flags 'subflow'
+	option device 'eth1'
+
+config interface 'secondwan'
+	option enable '1'
+	option metric '2'
+	option device 'eth1'
+	list mptcp_flags 'subflow'
+
+config interface 'wwan'
+	option enable '1'
+	option metric '3'
+	option device 'wlan-sta0'
+	list mptcp_flags 'subflow'
+
+config interface 'tethering'
+	option enable '1'
+	option metric '4'
+	option device 'usb0'
+	list mptcp_flags 'subflow'
+
+config interface 'modem_0000_4'
+	option enable '1'
+	option device 'rmnet_mhi0'
+	option metric '5'
+	list mptcp_flags 'subflow'
+
+package mtkhnat
+
+config global 'global'
+	option enable '1'
+	option hqos '0'
+	option txq_num '16'
+	option scheduling 'wrr'
+	option sch0_bw '1000000'
+	option sch1_bw '1000000'
+	option actype '1'
+
+config queue
+	option id '0'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '1'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '2'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '3'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '4'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '5'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '6'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '7'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '8'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '9'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '10'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '11'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '12'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '13'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '14'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '15'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '16'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '17'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '18'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '19'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '20'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '21'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '22'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '23'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '24'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '25'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '26'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '27'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '28'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '29'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '30'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '31'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '32'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '33'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '34'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '35'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '36'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '37'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '38'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '39'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '40'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '41'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '42'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '43'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '44'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '45'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '46'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '47'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '48'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '49'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '50'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '51'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '52'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '53'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '54'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '55'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '56'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '57'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '58'
+	option minrate '30'
+	option maxrate '100'
+	option weight '2'
+	option resv '4'
+
+config queue
+	option id '59'
+	option minrate '30'
+	option maxrate '100'
+	option weight '4'
+	option resv '4'
+
+config queue
+	option id '60'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '61'
+	option minrate '30'
+	option maxrate '100'
+	option weight '6'
+	option resv '4'
+
+config queue
+	option id '62'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '63'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '64'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '65'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '66'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '67'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '68'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '69'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '70'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '71'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '72'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '73'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '74'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '75'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '76'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '77'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '78'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '79'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '80'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '81'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '82'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '83'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '84'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '85'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '86'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '87'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '88'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '89'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '90'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '91'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '92'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '93'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '94'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '95'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '96'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '97'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '98'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '99'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '100'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '101'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '102'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '103'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '104'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '105'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '106'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '107'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '108'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '109'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '110'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '111'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '112'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '113'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '114'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '115'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '116'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '117'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '118'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '119'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '120'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '121'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '122'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '123'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '124'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '125'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '126'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+config queue
+	option id '127'
+	option minrate '30'
+	option maxrate '100'
+	option weight '8'
+	option resv '4'
+
+package nas
+
+config service 'conf'
+	option log '1'
+	option gl_nas_sys_enable '1'
+	option nas_ser_cmd_port '6000'
+	option nas_ser_download_port '6001'
+	option nas_ser_upload_port '6002'
+	option app_timeout '480'
+	option samba_is_init '1'
+	option webdav_port '6008'
+	option webdav_ssl_enable '1'
+
+package netify-proc-flow-actions
+
+package netifyd
+
+config netifyd
+	option enabled '1'
+	option autoconfig '0'
+	list options '--thread-detection-cores=2'
+
+package network
+
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config globals 'globals'
+	option ula_prefix 'fd1e:8328:6475::/48'
+
+config device
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'lan1'
+	list ports 'lan2'
+	list ports 'lan3'
+	list ports 'lan4'
+	list ports 'lan5'
+	option macaddr '00:00:5e:00:53:05'
+
+config device
+	option name 'lan1'
+	option macaddr '00:00:5e:00:53:05'
+
+config device
+	option name 'lan2'
+	option macaddr '00:00:5e:00:53:05'
+
+config device
+	option name 'lan3'
+	option macaddr '00:00:5e:00:53:05'
+
+config device
+	option name 'lan4'
+	option macaddr '00:00:5e:00:53:05'
+
+config device
+	option name 'lan5'
+	option macaddr '00:00:5e:00:53:05'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '192.168.8.1'
+	option netmask '255.255.255.0'
+	option ip6assign '60'
+	option isolate '0'
+
+config device
+	option name 'eth1'
+	option macaddr '00:00:5e:00:53:04'
+
+config interface 'wan'
+	option device 'eth1'
+	option proto 'dhcp'
+	option force_link '0'
+	option ipv6 '0'
+	option classlessroute '0'
+	option metric '10'
+
+config interface 'wan6'
+	option proto 'dhcpv6'
+	option device '@wan'
+	option disabled '1'
+
+config interface 'guest'
+	option force_link '1'
+	option type 'bridge'
+	option proto 'static'
+	option ipaddr '192.168.9.1'
+	option netmask '255.255.255.0'
+	option ip6assign '60'
+	option multicast_querier '1'
+	option igmp_snooping '0'
+	option isolate '0'
+	option bridge_empty '1'
+	option disabled '1'
+
+config rule 'policy_relay_lo_rt_lan'
+	option lookup '16800'
+	option in 'loopback'
+	option priority '1'
+
+config interface 'tethering6'
+	option device '@tethering'
+	option proto 'dhcpv6'
+	option disabled '1'
+
+config interface 'wwan6'
+	option device '@wwan'
+	option proto 'dhcpv6'
+	option disabled '1'
+
+config interface 'wwan'
+	option proto 'dhcp'
+	option classlessroute '0'
+	option metric '20'
+
+config interface 'secondwan'
+	option ipv6 '0'
+	option proto 'dhcp'
+	option metric '15'
+	option force_link '0'
+	option classlessroute '0'
+
+config interface 'secondwan6'
+	option proto 'dhcpv6'
+	option device '@secondwan'
+	option disabled '1'
+
+config interface 'iot'
+	option force_link '1'
+	option device 'br-iot'
+	option proto 'static'
+	option ipaddr '192.168.10.1'
+	option netmask '255.255.255.0'
+	option delegate '0'
+	option multicast_querier '1'
+	option igmp_snooping '0'
+	option isolate '0'
+	option disabled '1'
+
+config device
+	option name 'br-iot'
+	option type 'bridge'
+	option bridge_empty '1'
+
+config interface 'modem_1_2_s1_6'
+	option ifname '@modem_1_2_s1'
+	option proto 'dhcpv6'
+	option disabled '1'
+
+config interface 'modem_2_1_s1_6'
+	option ifname '@modem_2_1_s1'
+	option proto 'dhcpv6'
+	option disabled '1'
+
+package openvpn
+
+config openvpn 'custom_config'
+	option enabled '0'
+	option config '/etc/openvpn/my-vpn.conf'
+
+config openvpn 'sample_server'
+	option enabled '0'
+	option port '1194'
+	option proto 'udp'
+	option dev 'tun'
+	option ca '/etc/openvpn/ca.crt'
+	option cert '/etc/openvpn/server.crt'
+	option key 'REDACTED'
+	option dh '/etc/openvpn/dh2048.pem'
+	option server '10.8.0.0 255.255.255.0'
+	option ifconfig_pool_persist '/tmp/ipp.txt'
+	option keepalive '10 120'
+	option persist_key '1'
+	option persist_tun '1'
+	option user 'nobody'
+	option status '/tmp/openvpn-status.log'
+	option verb '3'
+
+config openvpn 'sample_client'
+	option enabled '0'
+	option client '1'
+	option dev 'tun'
+	option proto 'udp'
+	list remote 'my_server_1 1194'
+	option resolv_retry 'infinite'
+	option nobind '1'
+	option persist_key '1'
+	option persist_tun '1'
+	option user 'nobody'
+	option ca '/etc/openvpn/ca.crt'
+	option cert '/etc/openvpn/client.crt'
+	option key 'REDACTED'
+	option verb '3'
+
+package oui-httpd
+
+config oui-httpd 'main'
+	option security_rule '1'
+	option max_login_fail '10'
+	option login_fail_wait '600'
+	option lang 'en'
+	option inited '1'
+	option console_disabled '0'
+
+config no-auth-methods
+	option object 'ui'
+	list method 'get_lang'
+	list method 'load_locales'
+	list method 'check_initialized'
+	list method 'get_wifi_config_init'
+	list method 'init'
+	list method 'get_timezone_list'
+
+config no-auth-methods
+	option object 'system'
+	list method 'get_timezone_list'
+
+package ovpnclient
+
+config providers
+	option provider 'NordVPN'
+	option auth_type '1'
+	option procedure '1'
+	option group_id '47000'
+
+config providers
+	option provider 'FromApp'
+	option auth_type '1'
+	option procedure '0'
+	option group_id '29967'
+
+config groups
+	option group_id '47000'
+	option group_name 'NordVPN'
+	option group_type '1'
+	option auth_type '1'
+	option procedure '1'
+	option show '0'
+
+config groups
+	option group_id '29967'
+	option group_name 'FromApp'
+	option group_type '3'
+	option auth_type '1'
+	option procedure '0'
+	option show '0'
+
+package ovpnserver
+
+config general 'global'
+	option enable '0'
+	option access 'DROP'
+	option masq '1'
+
+config service 'vpn'
+	option auth 'REDACTED'
+	option proto 'udp'
+	option port '1194'
+	option dev 'ovpnserver'
+	option dev_type 'tun'
+	option cipher 'AES-256-GCM'
+	option comp 'adaptive'
+	option subnetv4 '10.8.0.0'
+	option mask '255.255.255.0'
+	option host '127.0.0.1'
+	option start '10.8.0.2'
+	option end '10.8.0.100'
+	option verb '3'
+	option access_scope '1'
+	option client_auth '1'
+	option tap_address '10.8.0.1'
+	option tap_mask '255.255.255.0'
+	option subnetv6 'fd00:2d46:a01f:8879::0/64'
+
+package parental_control
+
+config global 'global'
+	option enable '0'
+	option drop_anonymous '0'
+	option auto_update '0'
+	option enable_app '0'
+	option log_level '2'
+	list src_dev 'br-lan'
+	list src_dev 'br-guest'
+
+config rule 'drop'
+	option name 'drop_all'
+	option action 'DROP'
+	option color ' #e982a5'
+	option preset '1'
+
+config rule 'accept'
+	option name 'accept_all'
+	option action 'ACCEPT'
+	option color '#4bd9cc'
+	option preset '1'
+
+package parental_control_apps
+
+config category 'sexual_content'
+	list category 'adult'
+
+config category 'gambling'
+	list category 'gambling'
+
+config category 'malicious_content'
+	list category 'malware'
+
+config category 'game'
+	list category 'games'
+
+config category 'social_entertainment'
+	list category 'entertainment'
+	list category 'recreation'
+	list category 'sports'
+	list category 'streaming-media'
+	list category 'social-media'
+	list category 'news'
+	list category 'messaging'
+
+config category 'shopping'
+	list category 'shopping'
+
+package parental_control_v2
+
+config global 'global'
+	option enable '0'
+	option init '1'
+	option drop_anonymous '0'
+	option auto_update '0'
+	option log_level '2'
+	list src_dev 'br-lan'
+	list src_dev 'br-guest'
+	list src_dev 'br-iot'
+
+config rule 'drop'
+	option name 'drop_all'
+	option action 'DROP'
+
+config rule 'accept'
+	option name 'accept_all'
+	option action 'ACCEPT'
+
+package plugins
+
+config plugins 'global'
+	option update_status '0'
+	option update_time '1788629136'
+
+package port_forward
+
+package qos
+
+config qos 'general'
+	option enable '0'
+	option model 'cake'
+	option upload '1000'
+	option download '1000'
+	option sum '0'
+
+config wan
+	option upload '1000'
+	option download '1000'
+
+config wwan
+	option upload '1000'
+	option download '1000'
+
+config tethering
+	option upload '1000'
+	option download '1000'
+
+config modem
+	option upload '1000'
+	option download '1000'
+
+package repeater
+
+config main
+	option auto '1'
+	option level '6'
+	option switch_interval '30'
+	option macaddr '00:00:5e:00:53:03'
+	option smart_reconnect '1'
+
+package route_policy
+
+config policy 'global'
+	option mode '0'
+	option instance_on '0'
+	option service_policy_en '0'
+	list append_source_if 'iot'
+	option enabled '0'
+
+config default
+	option type 'default'
+	option via 'novpn'
+	option name 'last sort default policy'
+	option from_type 'device'
+	option tunnel_id '100'
+	option enabled '1'
+	option mark '0x8000'
+
+config rule_process 'gl_process'
+	option name 'process policy'
+	option from_type 'process_gid'
+	list from '10000'
+	option tunnel_id '201'
+	option enabled '1'
+	option via 'novpn'
+	option mark '0x8000'
+
+config rule_process 'gl_process_vpn'
+	option name 'process policy'
+	option from_type 'process_gid'
+	option from '20000'
+	option tunnel_id '10100'
+	option enabled '1'
+	option via 'wgclient1'
+	option mark '0x1000'
+
+package rpcd
+
+config rpcd
+	option socket '/var/run/ubus/ubus.sock'
+	option timeout '30'
+
+config login
+	option username 'root'
+	option password 'REDACTED'
+	list read '*'
+	list write '*'
+
+package rtty
+
+config rtty 'general'
+
+package samba4
+
+config samba
+	option workgroup 'WORKGROUP'
+	option charset 'UTF-8'
+	option name 'GL-mt6000'
+	option description 'GL-mt6000-ro0eabc'
+
+package sip_alg
+
+config global 'global'
+	option enable '0'
+	option helper '0'
+
+package sqm
+
+config queue 'eth1'
+	option enabled '0'
+	option qdisc 'cake'
+	option script 'piece_of_cake.qos'
+	option qdisc_advanced '0'
+	option ingress_ecn 'ECN'
+	option egress_ecn 'ECN'
+	option qdisc_really_really_advanced '0'
+	option itarget 'auto'
+	option etarget 'auto'
+	option linklayer 'none'
+	option interface 'br-lan'
+	option upload '0'
+	option download '0'
+
+config service
+	option inited '1'
+
+package stubby
+
+config stubby 'global'
+	option manual '0'
+	option trigger 'wan'
+	list dns_transport 'GETDNS_TRANSPORT_TLS'
+	option tls_authentication '1'
+	option tls_query_padding_blocksize '128'
+	option appdata_dir '/var/lib/stubby'
+	option edns_client_subnet_private '1'
+	option idle_timeout '10000'
+	option round_robin_upstreams '1'
+	list listen_address '127.0.0.1@5453'
+	list listen_address '0::1@5453'
+
+config resolver
+	option address '2606:4700:4700::1111'
+	option tls_auth_name 'REDACTED'
+
+config resolver
+	option address '2606:4700:4700::1001'
+	option tls_auth_name 'REDACTED'
+
+config resolver
+	option address '1.1.1.1'
+	option tls_auth_name 'REDACTED'
+
+config resolver
+	option address '1.0.0.1'
+	option tls_auth_name 'REDACTED'
+
+package switch-button
+
+config main
+
+package system
+
+config system
+	option log_size '64'
+	option urandom_seed '0'
+	option hostname 'GL-MT6000'
+	option compat_version '1.0'
+	option cronloglevel '10'
+	option ttylogin '1'
+	option timezone '<-03>3'
+	option zonename 'America/Fortaleza'
+	option auto_timezone '0'
+
+config timeserver 'ntp'
+	option enabled '1'
+	option enable_server '0'
+	list server '0.openwrt.pool.ntp.org'
+	list server '1.openwrt.pool.ntp.org'
+	list server '2.openwrt.pool.ntp.org'
+	list server '3.openwrt.pool.ntp.org'
+
+package tailscale
+
+config settings 'settings'
+	option log_stderr '1'
+	option log_stdout '1'
+	option port '41641'
+	option state_file '/etc/tailscale/tailscaled.state'
+
+package tor
+
+config global 'global'
+	option enable '0'
+	option manual '0'
+	option countries 'all'
+
+package ubootenv
+
+config ubootenv
+	option dev '/dev/mmcblk0p1'
+	option offset '0x0'
+	option envsize '0x80000'
+
+package uhttpd
+
+config uhttpd 'main'
+	option redirect_https '0'
+	option home '/www'
+	option rfc1918_filter '1'
+	option max_requests '3'
+	option max_connections '100'
+	option cert '/etc/uhttpd.crt'
+	option key 'REDACTED'
+	option cgi_prefix '/cgi-bin'
+	list lua_prefix '/cgi-bin/luci=/usr/lib/lua/luci/sgi/uhttpd.lua'
+	option script_timeout '60'
+	option network_timeout '30'
+	option http_keepalive '20'
+	option tcp_keepalive '1'
+	option ubus_prefix '/ubus'
+	option no_dirlists '1'
+	list listen_http '127.0.0.1:8080'
+	list listen_https '127.0.0.1:8443'
+
+config cert 'defaults'
+	option days '730'
+	option key_type 'ec'
+	option bits '2048'
+	option ec_curve 'P-256'
+	option country 'ZZ'
+	option state 'Somewhere'
+	option location 'Unknown'
+	option commonname 'OpenWrt'
+
+package upgrade
+
+config service 'general'
+	option keep_config '0'
+	option keep_package '0'
+	option prompt '1'
+	option gray_prompt '1'
+	option ignore_version '4.9.1'
+	option method 'stable'
+
+package wan-access
+
+config main
+	option whitelist '0'
+
+package wireguard
+
+config proxy 'global'
+	option global_proxy '1'
+
+config providers 'AzireVPN'
+	option auth_type '1'
+	option procedure '0'
+	option referral_code '9x7wisg4'
+	option group_id '10000'
+
+config providers 'Hideme'
+	option auth_type '1'
+	option procedure '0'
+	option group_id '10001'
+
+config providers 'IPVanish'
+	option auth_type '1'
+	option procedure '1'
+	option group_id '10002'
+
+config providers 'Mullvad'
+	option auth_type '2'
+	option procedure '1'
+	option group_id '10003'
+
+config providers 'NordVPN'
+	option auth_type '2'
+	option procedure '1'
+	option group_id '10004'
+
+config providers 'PIA'
+	option auth_type '1'
+	option procedure '1'
+	option group_id '10005'
+
+config providers 'Surfshark'
+	option auth_type '1'
+	option procedure '1'
+	option group_id '10006'
+
+config providers 'FromApp'
+	option auth_type '1'
+	option procedure '0'
+	option group_id '10007'
+
+config providers 'PureVPN'
+	option auth_type '1'
+	option procedure '0'
+	option group_id '10008'
+
+config providers 'Windscribe'
+	option auth_type '1'
+	option procedure '1'
+	option group_id '10009'
+
+config groups 'group_10000'
+	option group_name 'AzireVPN'
+	option auth_type '1'
+	option procedure '0'
+	option show '0'
+	option group_type '1'
+
+config groups 'group_10001'
+	option group_name 'Hideme'
+	option auth_type '1'
+	option procedure '0'
+	option show '0'
+	option group_type '1'
+
+config groups 'group_10002'
+	option group_name 'IPVanish'
+	option auth_type '1'
+	option procedure '1'
+	option show '0'
+	option group_type '1'
+
+config groups 'group_10003'
+	option group_name 'Mullvad'
+	option auth_type '2'
+	option procedure '1'
+	option show '0'
+	option group_type '1'
+
+config groups 'group_10004'
+	option group_name 'NordVPN'
+	option auth_type '2'
+	option procedure '1'
+	option show '0'
+	option group_type '1'
+
+config groups 'group_10005'
+	option group_name 'PIA'
+	option auth_type '1'
+	option procedure '1'
+	option show '0'
+	option group_type '1'
+
+config groups 'group_10006'
+	option group_name 'Surfshark'
+	option auth_type '1'
+	option procedure '1'
+	option show '0'
+	option group_type '1'
+
+config groups 'group_10007'
+	option group_name 'FromApp'
+	option auth_type '1'
+	option procedure '0'
+	option show '0'
+	option group_type '3'
+
+config groups 'group_10008'
+	option group_name 'PureVPN'
+	option auth_type '1'
+	option procedure '0'
+	option show '0'
+	option group_type '1'
+
+config groups 'group_10009'
+	option group_name 'Windscribe'
+	option auth_type '1'
+	option procedure '1'
+	option show '0'
+	option group_type '1'
+
+package wireguard_server
+
+config servers 'main_server'
+	option address_v4 '10.1.0.1/24'
+	option port '51820'
+	option access 'DROP'
+	option client_to_client '0'
+	option masq '1'
+	option address_v6 'fd00:1d3a:24ee:58da::1/64'
+
+package wireless
+
+config wifi-device 'mt798611'
+	option type 'mtk'
+	option band '2g'
+	option htmode 'HE40'
+	option channel 'auto'
+	option txpower '100'
+	option country 'US'
+	option random_bssid '1'
+	option disabled '0'
+	option legacy_rates '0'
+
+config wifi-iface 'wifi2g'
+	option device 'mt798611'
+	option mode 'ap'
+	option network 'lan'
+	option ifname 'ra0'
+	option encryption 'psk2'
+	option wds '1'
+	option isolate '0'
+	option hidden '0'
+	option ieee80211k '1'
+	option bss_transition '1'
+	option ssid 'example-net'
+	option key 'REDACTED'
+	option macaddr '00:00:5E:00:53:01'
+	option init '1'
+	option random_bssid '1'
+	option factory_macaddr '00:00:5e:00:53:05'
+
+config wifi-device 'mt798612'
+	option type 'mtk'
+	option band '5g'
+	option channel 'auto'
+	option htmode 'HE80'
+	option txpower '100'
+	option country 'US'
+	option random_bssid '1'
+	option disabled '0'
+
+config wifi-iface 'wifi5g'
+	option device 'mt798612'
+	option mode 'ap'
+	option network 'lan'
+	option ifname 'rax0'
+	option encryption 'psk2'
+	option wds '1'
+	option isolate '0'
+	option hidden '0'
+	option ieee80211k '1'
+	option bss_transition '1'
+	option ssid 'example-net-5ghz'
+	option key 'REDACTED'
+	option macaddr '00:00:5E:00:53:0B'
+	option init '1'
+	option random_bssid '1'
+	option factory_macaddr '00:00:5e:00:53:06'
+
+config wifi-iface 'guest2g'
+	option device 'mt798611'
+	option network 'guest'
+	option mode 'ap'
+	option ifname 'ra1'
+	option encryption 'psk2'
+	option key 'REDACTED'
+	option ssid 'GL-MT6000-abc-Guest'
+	option guest '1'
+	option disabled '1'
+	option wds '1'
+	option isolate '1'
+	option hidden '0'
+	option macaddr '00:00:5E:00:53:0E'
+	option random_bssid '1'
+	option factory_macaddr '00:00:5e:00:53:07'
+
+config wifi-iface 'guest5g'
+	option device 'mt798612'
+	option network 'guest'
+	option mode 'ap'
+	option ifname 'rax1'
+	option encryption 'psk2'
+	option key 'REDACTED'
+	option ssid 'GL-MT6000-abc-5G-Guest'
+	option guest '1'
+	option disabled '1'
+	option wds '1'
+	option isolate '1'
+	option hidden '0'
+	option macaddr '00:00:5E:00:53:0C'
+	option random_bssid '1'
+	option factory_macaddr '00:00:5e:00:53:08'
+
+config wifi-iface 'iot2g'
+	option device 'mt798611'
+	option network 'iot'
+	option mode 'ap'
+	option ifname 'ra2'
+	option encryption 'psk2'
+	option key 'REDACTED'
+	option ssid 'GL-MT6000-abc-IoT'
+	option factory_macaddr '00:00:5e:00:53:09'
+	option iot '1'
+	option disabled '1'
+	option wds '1'
+	option isolate '1'
+	option hidden '0'
+	option init '0'
+	option random_bssid '1'
+	option macaddr '00:00:5E:00:53:0D'
+
+config wifi-iface 'iot5g'
+	option device 'mt798612'
+	option network 'iot'
+	option mode 'ap'
+	option ifname 'rax2'
+	option encryption 'psk2'
+	option key 'REDACTED'
+	option ssid 'GL-MT6000-abc-5G-IoT'
+	option factory_macaddr '00:00:5e:00:53:0a'
+	option iot '1'
+	option disabled '1'
+	option wds '1'
+	option isolate '1'
+	option hidden '0'
+	option init '0'
+	option random_bssid '1'
+	option macaddr '00:00:5E:00:53:02'
+
+package zerotier
+
+config zerotier 'gl'
+	option enabled '0'
+	option nat '0'
+	option wan_nat '0'
+
