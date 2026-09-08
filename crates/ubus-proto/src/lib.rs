@@ -29,6 +29,13 @@ const ID_MASK: u32 = 0x7f00_0000;
 const ID_SHIFT: u32 = 24;
 const LEN_MASK: u32 = 0x00ff_ffff;
 
+// The encoder is the same bit layout read in the other direction, so it shares
+// these rather than restating them. Two copies of a mask is how an encoder and
+// a decoder drift apart while both look right.
+pub(crate) use {EXTENDED as EXTENDED_BIT, ID_SHIFT as ID_SHIFT_BITS, LEN_MASK as LEN_MASK_BITS};
+
+pub mod encode;
+
 /// Round up to the 4-byte boundary `blob_attr` payloads are padded to.
 ///
 /// The padding is *not* counted in `len`, but must be skipped to reach the next
