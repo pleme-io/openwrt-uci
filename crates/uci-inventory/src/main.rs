@@ -19,6 +19,8 @@ SUBCOMMANDS:
     survey     coverage report: what exists, what we manage, why we decline the rest
     values     Helm values (JSON, which Helm accepts) for the managed set
     imports    {to, id} import identities for the managed set
+    renames    proposed stable names for anonymous sections (a PROPOSAL; this
+               tool never mutates the device — feed it to uci rename yourself)
 
 OPTIONS:
     --adapter HOST:PORT    the ubus-http façade adapter [default: 127.0.0.1:9797]
@@ -85,6 +87,7 @@ fn main() -> ExitCode {
         "survey" => emit::report(&inv),
         "values" => emit::helm_values(&inv),
         "imports" => emit::imports(&inv),
+        "renames" => emit::renames(&uci_inventory::rename::propose_all(&inv)),
         other => {
             eprintln!("unknown subcommand: {other}");
             eprint!("{USAGE}");

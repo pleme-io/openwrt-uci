@@ -10,6 +10,7 @@
 //! second class of quoting bug) to get a values file.
 
 use crate::inventory::{Inventory, SectionAddr};
+use crate::rename::Rename;
 use ubus_facade::json::Json;
 
 /// The Helm values document for the managed set.
@@ -136,6 +137,36 @@ pub fn report(inv: &Inventory) -> Json {
             ]),
         ),
         ("declined", Json::Arr(declined)),
+    ])
+}
+
+/// Proposed renames, as data a reviewer can read before anything is applied.
+///
+/// ★ A PROPOSAL, never an action. This crate does not mutate the device: a tool
+/// that both decides 41 renames and performs them gives a reviewer nothing to
+/// review, and the one thing worth reviewing here is whether each derived name
+/// describes the section it will be attached to.
+///
+/// Deliberately emits the three STRUCTURED fields and no ready-to-paste shell
+/// line. A `uci rename ...` string in this output would be an invitation to
+/// apply 41 mutations through a shell, which is the authoring path the house
+/// style exists to close — the applier should be typed, reading these fields.
+#[must_use]
+pub fn renames(rs: &[Rename]) -> Json {
+    let items: Vec<Json> = rs
+        .iter()
+        .map(|r| {
+            Json::obj([
+                ("package", Json::str(&r.package)),
+                ("from", Json::str(&r.from)),
+                ("to", Json::str(&r.to)),
+                ("derivedFrom", Json::str(&r.derived_from)),
+            ])
+        })
+        .collect();
+    Json::obj([
+        ("count", Json::Int(i64::try_from(rs.len()).unwrap_or(i64::MAX))),
+        ("renames", Json::Arr(items)),
     ])
 }
 

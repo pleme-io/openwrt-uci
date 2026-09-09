@@ -134,6 +134,18 @@ impl core::fmt::Display for SurveyError {
     }
 }
 
+/// Whether a section name is one UCI generated for an anonymous section.
+///
+/// `cfg` followed by hex, and nothing else. See the note at its call site for
+/// why this is a cross-validated signal rather than a heuristic.
+#[must_use]
+pub fn is_uci_internal_name(name: &str) -> bool {
+    let Some(rest) = name.strip_prefix("cfg") else {
+        return false;
+    };
+    !rest.is_empty() && rest.chars().all(|c| c.is_ascii_hexdigit())
+}
+
 fn obj<'a>(j: &'a Json, key: &str) -> Option<&'a Json> {
     if let Json::Obj(pairs) = j {
         pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v)
@@ -189,9 +201,29 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
             .and_then(scalar)
             .ok_or_else(|| SurveyError::Malformed(format!("{name}.{key}: no `.type`")))?;
 
-        let anonymous = obj(val, ".anonymous")
-            .and_then(scalar)
-            .is_some_and(|s| s == "1" || s.eq_ignore_ascii_case("true"));
+        // ── ★ TWO SIGNALS FOR ANONYMITY, AND THE SECOND IS NOT A GUESS ──────
+        //
+        // `.anonymous` is the measurement and is preferred. But it arrives as
+        // blobmsg INT8, and an adapter predating that decoding renders it as an
+        // undecodable value — in which case every section reads as named, which
+        // is the single worst way to be wrong here (a positional identity gets
+        // committed as if it were stable).
+        //
+        // The fallback is UCI's own internal naming convention: an anonymous
+        // section is given `cfg` + hex. That is not an inference — it was
+        // cross-validated against UCI's authoritative rendering on the live
+        // device (2026-09-09): of 80 sections in the managed packages, the 41
+        // that `uci show` prints as `@type[N]` are exactly the 41 carrying a
+        // `cfg`-hex name, and the two NAMED sets were identical, not merely the
+        // same size.
+        //
+        // Applied only when `.anonymous` is undecodable, so a real measurement
+        // always wins. A user could pathologically name a section `cfg0a1b`;
+        // the cost is one wrongly-proposed rename in a proposal a human reads.
+        let anonymous = match obj(val, ".anonymous").and_then(scalar) {
+            Some(s) => s == "1" || s.eq_ignore_ascii_case("true"),
+            None => is_uci_internal_name(key),
+        };
 
         let seen = per_type.entry(section_type.clone()).or_insert(0);
         let type_index = *seen;
@@ -342,6 +374,45 @@ mod tests {
         let p = parse_package("firewall", Disposition::Managed, &body).expect("parses");
         assert_eq!(p.sections[0].options["target"], "FIRST");
         assert_eq!(p.sections[0].addr.as_uci(), "@rule[0]");
+    }
+
+    #[test]
+    fn uci_internal_names_are_recognised_exactly() {
+        assert!(is_uci_internal_name("cfg030f15"));
+        assert!(is_uci_internal_name("cfg0a1b2c"));
+        // Not internal: no hex tail, non-hex chars, or a different prefix.
+        assert!(!is_uci_internal_name("cfg"));
+        assert!(!is_uci_internal_name("cfgzz"));
+        assert!(!is_uci_internal_name("config1"));
+        assert!(!is_uci_internal_name("lan"));
+        assert!(!is_uci_internal_name("wan_ssh"));
+    }
+
+    #[test]
+    fn a_measured_anonymous_flag_beats_the_name_fallback() {
+        // `.anonymous: 0` on a cfg-looking name: the MEASUREMENT wins, so this
+        // stays named and is never proposed for rename.
+        let body = pkg_json(
+            r#"{"values":{"cfg0a1b":{".type":"rule",".name":"cfg0a1b",".anonymous":0,".index":0}}}"#,
+        );
+        let p = parse_package("firewall", Disposition::Managed, &body).expect("parses");
+        assert_eq!(p.sections[0].addr, SectionAddr::Named("cfg0a1b".to_owned()));
+    }
+
+    #[test]
+    fn the_fallback_applies_only_when_anonymous_is_undecodable() {
+        // No `.anonymous` at all (an adapter that could not decode INT8) plus a
+        // cfg-hex name: treated as anonymous, so it gets a positional address
+        // and becomes a rename candidate rather than a fake stable identity.
+        let body = pkg_json(
+            r#"{"values":{"cfg0a1b":{".type":"rule",".name":"cfg0a1b",".index":0}}}"#,
+        );
+        let p = parse_package("firewall", Disposition::Managed, &body).expect("parses");
+        assert_eq!(p.sections[0].addr.as_uci(), "@rule[0]");
+        // ...and a genuinely-named section under the same conditions does not.
+        let body2 = pkg_json(r#"{"values":{"lan":{".type":"rule",".name":"lan",".index":0}}}"#);
+        let p2 = parse_package("firewall", Disposition::Managed, &body2).expect("parses");
+        assert_eq!(p2.sections[0].addr, SectionAddr::Named("lan".to_owned()));
     }
 
     #[test]

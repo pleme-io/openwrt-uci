@@ -44,3 +44,4 @@ pub mod adapter;
 pub mod disposition;
 pub mod emit;
 pub mod inventory;
+pub mod rename;
