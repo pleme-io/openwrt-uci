@@ -18,5 +18,13 @@ name = "ubus-facade"
 version = "0.1.0"
 
 [[package]]
+name = "ubus-http"
+version = "0.1.0"
+dependencies = [
+ "ubus-facade",
+ "ubus-proto",
+]
+
+[[package]]
 name = "ubus-proto"
 version = "0.1.0"

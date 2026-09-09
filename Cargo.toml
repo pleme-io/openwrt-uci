@@ -4,6 +4,7 @@ members = [
   "crates/openwrt-uci",
   "crates/openwrt-uci-transport",
   "crates/ubus-facade",
+  "crates/ubus-http",
   "crates/ubus-proto",
 ]
 

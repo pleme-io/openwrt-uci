@@ -1,0 +1,18 @@
+[package]
+name = "ubus-http"
+description = "The façade→ubus adapter: serves the generated OpenAPI façade over HTTP and turns each call into a ubus INVOKE"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[dependencies]
+ubus-facade = { path = "../ubus-facade", version = "0.1.0" }
+ubus-proto = { path = "../ubus-proto", version = "0.1.0" }
+
+[lints]
+workspace = true
