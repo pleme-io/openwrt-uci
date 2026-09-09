@@ -1,0 +1,84 @@
+# The generic UCI resource: any section of any package.
+#
+# GROUNDED, not designed. Every field below is a parameter the device itself
+# declares for the corresponding `uci` method — read from `ubus -v list` and
+# carried into `crates/ubus-facade/tests/fixtures/ubus-facade.openapi.json`.
+# Nothing here is inferred from OpenWrt documentation.
+#
+# ── Why this is the ONLY resource spec in this directory ──────────────────────
+#
+# `docs/roteador.md` §7 sketches typed siblings — openwrt_network_interface,
+# openwrt_wireless_iface, openwrt_firewall_rule, openwrt_dhcp_pool. They are
+# deliberately absent, because their fields are UCI *option* names and this
+# device does not carry the shapes that sketch assumes: in the committed
+# device export, `config rule` sections are cellular APN rules (apn, protocol,
+# apn_use) and `config dhcp_ntp_server` belongs to chrony. Authoring
+# `openwrt_firewall_rule` from recollection would produce a provider whose
+# schema does not match the device it manages — discovered by a failed apply
+# against real infrastructure rather than here.
+#
+# A typed resource is added when its package's options have been measured on a
+# device, one package at a time. This generic one manages all of them in the
+# meantime, because UCI's own model is (package, section, type, values) and
+# that is exactly what the device's methods take.
+
+[resource]
+name = "openwrt_uci_section"
+description = "A UCI configuration section on an OpenWrt device, addressed as (config, section). Manages any package generically: UCI's own model is package -> section -> options, and the ubus `uci` object exposes precisely that."
+category = "uci"
+
+[crud]
+# One façade path per operation — the reason the façade emits 264 discrete
+# paths instead of one JSON-RPC endpoint.
+create_endpoint = "/uci/add"
+create_schema   = "UciAddRequest"
+read_endpoint   = "/uci/get"
+read_schema     = "UciGetRequest"
+update_endpoint = "/uci/set"
+update_schema   = "UciSetRequest"
+delete_endpoint = "/uci/delete"
+delete_schema   = "UciDeleteRequest"
+
+[identity]
+# ★ UCI's real identity is the PAIR (config, section) — a section name is only
+# unique within its package. Terraform wants a single id, so `section` is the
+# id field and `config` is force-new: a section cannot be moved between
+# packages in place, so changing it is a replace, not an update.
+id_field = "section"
+import_field = "section"
+force_new_fields = ["config", "type"]
+
+[fields.config]
+type = "String"
+required = true
+description = "The UCI package, i.e. a file under /etc/config (network, wireless, firewall, system, ...). Force-new: a section cannot move between packages in place."
+
+[fields.section]
+type = "String"
+required = false
+description = "The section name. Absent on create, where the device assigns one and returns it — a UCI section may be anonymous, in which case it is addressed positionally as @type[N] rather than by name."
+
+[fields.type]
+type = "String"
+required = false
+description = "The section type, e.g. `interface` in `config interface 'lan'`. Required when creating. Force-new: UCI cannot change a section's type in place."
+
+[fields.values]
+type = "Table"
+required = false
+description = "The section's options, as a flat map. UCI has no scalar/list distinction at this layer — a list option is a value that happens to repeat — so this is passed through as measured rather than split into two fields."
+
+[fields.match]
+type = "Table"
+required = false
+description = "Optional selector, matching sections by their option values instead of by name. Declared by the device for get/set/delete."
+
+[fields.option]
+type = "String"
+required = false
+description = "A single option name, for reading or deleting one option rather than a whole section."
+
+[fields.options]
+type = "Array"
+required = false
+description = "Several option names, for deleting more than one at once. Element type is not reported by `ubus -v list`."

@@ -244,3 +244,76 @@ fn the_emitted_document_is_valid_json() {
     );
     assert!(s.ends_with("}\n"), "one trailing newline");
 }
+
+// ---- the binding between the façade and the IaC resource specs ----
+
+/// ★ Every schema a resource spec names must exist in the façade.
+///
+/// `iac-forge`'s `CrudMapping` binds a resource to its operations by schema
+/// NAME (`create_schema`, `read_schema`, `update_schema`, `delete_schema`). A
+/// name with no matching component is not caught by either artifact alone: the
+/// TOML parses, the spec validates, and the failure appears when a generator
+/// resolves the reference — or worse, generates a resource missing an
+/// operation.
+///
+/// So this is a CROSS-ARTIFACT invariant, and it is checked here because here
+/// is the only place both artifacts are in scope. Parsed by hand rather than
+/// with a TOML crate to keep this workspace dependency-free; the shape being
+/// matched (`x_schema = "Name"`) is fixed by `CrudMapping`.
+#[test]
+fn every_schema_named_by_a_resource_spec_exists_in_the_facade() {
+    const SPEC: &str = include_str!("../../../resources/openwrt_uci_section.toml");
+
+    let named: Vec<&str> = SPEC
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.starts_with('#'))
+        .filter_map(|l| {
+            let (key, value) = l.split_once('=')?;
+            key.trim()
+                .ends_with("_schema")
+                .then(|| value.trim().trim_matches('"'))
+        })
+        .collect();
+
+    assert_eq!(
+        named.len(),
+        4,
+        "expected create/read/update/delete schema bindings, got {named:?}"
+    );
+
+    for name in &named {
+        // The component must be DEFINED, not merely mentioned — a `$ref` to it
+        // from a path would satisfy a naive `contains`.
+        assert!(
+            GOLDEN.contains(&format!("\"{name}\": {{")),
+            "resource spec names schema {name:?}, which the façade does not define"
+        );
+    }
+}
+
+/// The endpoints a resource spec names must exist as façade paths too.
+#[test]
+fn every_endpoint_named_by_a_resource_spec_exists_in_the_facade() {
+    const SPEC: &str = include_str!("../../../resources/openwrt_uci_section.toml");
+
+    let endpoints: Vec<&str> = SPEC
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.starts_with('#'))
+        .filter_map(|l| {
+            let (key, value) = l.split_once('=')?;
+            key.trim()
+                .ends_with("_endpoint")
+                .then(|| value.trim().trim_matches('"'))
+        })
+        .collect();
+
+    assert_eq!(endpoints.len(), 4, "got {endpoints:?}");
+    for e in &endpoints {
+        assert!(
+            GOLDEN.contains(&format!("\"{e}\": {{")),
+            "resource spec names endpoint {e:?}, which the façade does not serve"
+        );
+    }
+}

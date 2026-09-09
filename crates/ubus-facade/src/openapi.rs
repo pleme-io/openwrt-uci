@@ -38,9 +38,19 @@ use crate::json::Json;
 #[must_use]
 pub fn build(catalog: &Catalog, version: &str) -> Json {
     let mut paths: Vec<(String, Json)> = Vec::new();
+    let mut schemas: Vec<(String, Json)> = Vec::new();
 
     for object in &catalog.objects {
         for method in &object.methods {
+            // ★ Every operation gets a NAMED component schema, and its
+            // requestBody `$ref`s it rather than inlining.
+            //
+            // Not cosmetic. iac-forge's `CrudMapping` requires schema NAMES
+            // (`create_schema`, `read_schema`, `delete_schema`) to bind a
+            // resource to its operations, so a façade with only inline schemas
+            // reports `Schemas: 0` and cannot feed a CRUD generator at all —
+            // measured 2026-09-08 while trying exactly that.
+            schemas.push((schema_name(&object.path, &method.name), schema(method)));
             paths.push((
                 format!("/{}/{}", object.path, method.name),
                 Json::obj([("post", operation(&object.path, method))]),
@@ -84,10 +94,40 @@ pub fn build(catalog: &Catalog, version: &str) -> Json {
             ])]),
         ),
         ("paths", Json::Obj(paths)),
+        ("components", Json::obj([("schemas", Json::Obj(schemas))])),
     ])
 }
 
+/// The component-schema name for an operation's request body.
+///
+/// Derived from `(object, method)` the same way `operation_id` is, so the two
+/// cannot disagree, and suffixed `Request` because that is what it describes.
+#[must_use]
+pub fn schema_name(object: &str, method: &str) -> String {
+    let pascal = |s: &str| {
+        s.split(|c: char| !c.is_ascii_alphanumeric())
+            .filter(|part| !part.is_empty())
+            .map(|part| {
+                let mut cs = part.chars();
+                match cs.next() {
+                    Some(first) => first.to_ascii_uppercase().to_string() + cs.as_str(),
+                    None => String::new(),
+                }
+            })
+            .collect::<String>()
+    };
+    format!("{}{}Request", pascal(object), pascal(method))
+}
+
 fn operation(object: &str, method: &Method) -> Json {
+    let schema_ref = Json::obj([(
+        "$ref",
+        Json::str(format!(
+            "#/components/schemas/{}",
+            schema_name(object, &method.name)
+        )),
+    )]);
+
     let mut op = vec![
         (
             "operationId".to_owned(),
@@ -122,7 +162,7 @@ fn operation(object: &str, method: &Method) -> Json {
             ("required", Json::Bool(!method.params.is_empty())),
             (
                 "content",
-                Json::obj([("application/json", Json::obj([("schema", schema(method))]))]),
+                Json::obj([("application/json", Json::obj([("schema", schema_ref)]))]),
             ),
         ]),
     ));
