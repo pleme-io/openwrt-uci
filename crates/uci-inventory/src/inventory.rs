@@ -58,6 +58,16 @@ impl SectionAddr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Section {
     pub addr: SectionAddr,
+    /// The name UCI itself stores for this section (`.name`).
+    ///
+    /// ★ Kept even for anonymous sections, where it is UCI's internal
+    /// `cfgXXXXXX`, because it is the ONLY address `uci.rename` accepts over
+    /// ubus. Measured 2026-09-09: `uci.rename` given a positional `@type[N]`
+    /// address answers `{"ok": true}` and does nothing — a write that reports
+    /// success and silently no-ops — while `uci.get` resolves positional
+    /// addresses perfectly well. The two methods do not accept the same
+    /// address space, and nothing in the interface says so.
+    pub internal_name: String,
     pub section_type: String,
     /// Options, with UCI bookkeeping (`.type`, `.name`, `.anonymous`, `.index`)
     /// already removed — those are not options and must never be emitted as if
@@ -229,12 +239,13 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
         let type_index = *seen;
         *seen += 1;
 
+        // `.name` is authoritative; the map key equals it for named sections but
+        // relying on the key would break the day it does not.
+        let internal_name = obj(val, ".name").and_then(scalar).unwrap_or_else(|| key.clone());
         let addr = if anonymous {
             SectionAddr::Anonymous { section_type: section_type.clone(), type_index }
         } else {
-            // `.name` is authoritative; the map key equals it for named
-            // sections but relying on the key would break the day it does not.
-            SectionAddr::Named(obj(val, ".name").and_then(scalar).unwrap_or_else(|| key.clone()))
+            SectionAddr::Named(internal_name.clone())
         };
 
         let mut options = BTreeMap::new();
@@ -259,7 +270,7 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
         }
         secret_options.sort_unstable();
 
-        sections.push(Section { addr, section_type, options, secret_options });
+        sections.push(Section { addr, internal_name, section_type, options, secret_options });
     }
 
     Ok(Package { name: name.to_owned(), disposition, sections })

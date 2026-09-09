@@ -19,11 +19,17 @@ SUBCOMMANDS:
     survey     coverage report: what exists, what we manage, why we decline the rest
     values     Helm values (JSON, which Helm accepts) for the managed set
     imports    {to, id} import identities for the managed set
-    renames    proposed stable names for anonymous sections (a PROPOSAL; this
-               tool never mutates the device — feed it to uci rename yourself)
+    renames    proposed stable names for anonymous sections. A PROPOSAL by
+               default; --apply performs them, which is the ONE mutating path
+               in this tool. It is an adoption step (the sibling of terraform
+               import), because a rename cannot be expressed as declarative
+               state: declaring the new name would create a second section.
 
 OPTIONS:
     --adapter HOST:PORT    the ubus-http façade adapter [default: 127.0.0.1:9797]
+    --apply                `renames` only: actually perform them. Renaming
+                           does not reload netifd or fw4, so the running
+                           network is untouched.
     --include-positional   also emit sections addressed as @type[N]. OFF by
                            default: a positional address committed to git keeps
                            resolving after a section is inserted or deleted —
@@ -41,6 +47,7 @@ fn main() -> ExitCode {
     };
     let mut authority = "127.0.0.1:9797".to_owned();
     let mut scope = emit::Scope::StableOnly;
+    let mut do_apply = false;
     let mut i = 1;
     while i < args.len() {
         if args[i] == "--adapter" {
@@ -52,6 +59,9 @@ fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             }
             i += 2;
+        } else if args[i] == "--apply" {
+            do_apply = true;
+            i += 1;
         } else if args[i] == "--include-positional" {
             scope = emit::Scope::IncludePositional;
             i += 1;
@@ -95,7 +105,23 @@ fn main() -> ExitCode {
         "survey" => emit::report(&inv),
         "values" => emit::helm_values_scoped(&inv, scope),
         "imports" => emit::imports_scoped(&inv, scope),
-        "renames" => emit::renames(&uci_inventory::rename::propose_all(&inv)),
+        "renames" => {
+            let proposed = uci_inventory::rename::propose_all(&inv);
+            if do_apply {
+                match uci_inventory::rename::apply(&adapter, &proposed) {
+                    Ok(done) => emit::renames(&done),
+                    Err((done, e)) => {
+                        // Report what DID land before failing: a partial batch
+                        // is committed, and a caller needs to know which half.
+                        eprintln!("rename failed after {} applied: {e}", done.len());
+                        print!("{}", emit::renames(&done).render());
+                        return ExitCode::FAILURE;
+                    }
+                }
+            } else {
+                emit::renames(&proposed)
+            }
+        }
         other => {
             eprintln!("unknown subcommand: {other}");
             eprint!("{USAGE}");

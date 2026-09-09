@@ -193,6 +193,7 @@ pub fn renames(rs: &[Rename]) -> Json {
             Json::obj([
                 ("package", Json::str(&r.package)),
                 ("from", Json::str(&r.from)),
+                ("internal", Json::str(&r.internal)),
                 ("to", Json::str(&r.to)),
                 ("derivedFrom", Json::str(&r.derived_from)),
             ])
@@ -222,6 +223,7 @@ mod tests {
                     sections: vec![
                         Section {
                             addr: SectionAddr::Named("lan".to_owned()),
+                            internal_name: "lan".to_owned(),
                             section_type: "interface".to_owned(),
                             options: options.clone(),
                             secret_options: vec![],
@@ -231,6 +233,7 @@ mod tests {
                                 section_type: "device".to_owned(),
                                 type_index: 2,
                             },
+                            internal_name: "cfg0a0f15".to_owned(),
                             section_type: "device".to_owned(),
                             options: BTreeMap::new(),
                             secret_options: vec![],

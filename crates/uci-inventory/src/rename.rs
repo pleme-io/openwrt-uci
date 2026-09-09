@@ -36,6 +36,25 @@
 //! Derived from the section's own content, so the same device yields the same
 //! names every time and a reviewer can tell what a section IS from its
 //! identity: `rule_allow_dhcp_renew`, not `rule_7`.
+//!
+//! # Applying them
+//!
+//! [`apply`] exists, and it is the one mutating path in this crate. It is an
+//! **adoption** operation, the sibling of `terraform import`: renaming cannot
+//! be expressed as ongoing declarative state, because declaring a section under
+//! a new name would CREATE a second section rather than rename the first.
+//!
+//! Two properties make it safe to run against a live router:
+//!
+//! - **Renaming does not reload anything.** `uci rename` + `uci commit` rewrite
+//!   the config file; they do not restart netifd or fw4. The running network is
+//!   untouched, and the renamed file loads identically afterwards because the
+//!   name is a label.
+//! - **Renames are applied HIGHEST INDEX FIRST.** `@rule[3]` is positional, so
+//!   renaming `@rule[0]` first would be fine — a rename does not remove a
+//!   section from its type's ordering — but processing downward keeps every
+//!   not-yet-applied address valid under any implementation, rather than
+//!   relying on that.
 
 use crate::inventory::{Package, SectionAddr};
 use std::collections::BTreeSet;
@@ -53,10 +72,16 @@ const NAMING_OPTIONS: &[&str] = &[
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rename {
     pub package: String,
-    /// The address to rename FROM — always the positional form, which is what
-    /// `uci rename` accepts and what stays valid while other renames in the
-    /// same batch are applied.
+    /// The positional address, for a human reading the proposal.
     pub from: String,
+    /// The address the rename is actually ISSUED against — UCI's internal
+    /// section name.
+    ///
+    /// ★ Not the same as `from`, and that is the whole point. `uci.rename` over
+    /// ubus accepts only this form; handed a positional `@type[N]` address it
+    /// answers `{"ok": true}` and changes nothing. Measured the hard way: a
+    /// 41-rename batch reported complete success and left the device untouched.
+    pub internal: String,
     /// The proposed stable name.
     pub to: String,
     /// What the name was derived from, so a reviewer can judge it.
@@ -164,6 +189,7 @@ pub fn propose(pkg: &Package) -> Vec<Rename> {
         out.push(Rename {
             package: pkg.name.clone(),
             from: s.addr.as_uci(),
+            internal: s.internal_name.clone(),
             to: name,
             derived_from: extra,
         });
@@ -177,6 +203,74 @@ pub fn propose_all(inv: &crate::inventory::Inventory) -> Vec<Rename> {
     inv.managed().flat_map(propose).collect()
 }
 
+/// Apply renames through the adapter, highest index first.
+///
+/// Returns the renames that were applied, in the order applied. Stops at the
+/// first failure and returns it along with what had already succeeded — a
+/// partial batch is committed and knowable, rather than rolled back into a
+/// state nobody has looked at.
+///
+/// # Errors
+///
+/// The adapter error, plus the renames applied before it.
+pub fn apply(
+    adapter: &crate::adapter::Adapter,
+    renames: &[Rename],
+) -> Result<Vec<Rename>, (Vec<Rename>, crate::adapter::AdapterError)> {
+    use ubus_facade::json::Json;
+
+    // Highest index first, per the module docs.
+    let mut ordered: Vec<&Rename> = renames.iter().collect();
+    ordered.sort_by_key(|r| core::cmp::Reverse(index_of(&r.from)));
+
+    let mut done = Vec::new();
+    let mut packages: Vec<String> = Vec::new();
+    for r in ordered {
+        let req = Json::obj([
+            ("config", Json::str(&r.package)),
+            // The internal name, never `from` — see `Rename::internal`.
+            ("section", Json::str(&r.internal)),
+            ("name", Json::str(&r.to)),
+        ]);
+        if let Err(e) = adapter.post("/uci/rename", &req) {
+            return Err((done, e));
+        }
+        // ★ VERIFY, because `{"ok": true}` was measured to be a lie for this
+        // method. A write is not done because the call returned; it is done
+        // because reading it back agrees.
+        match adapter.post(
+            "/uci/get",
+            &Json::obj([
+                ("config", Json::str(&r.package)),
+                ("section", Json::str(&r.to)),
+            ]),
+        ) {
+            Ok(_) => {}
+            Err(e) => return Err((done, e)),
+        }
+        if !packages.contains(&r.package) {
+            packages.push(r.package.clone());
+        }
+        done.push(r.clone());
+    }
+    // One commit per touched package: uci stages per-package, so committing
+    // each once publishes that package's whole batch together.
+    for p in &packages {
+        if let Err(e) = adapter.post("/uci/commit", &Json::obj([("config", Json::str(p))])) {
+            return Err((done, e));
+        }
+    }
+    Ok(done)
+}
+
+/// The numeric index inside a positional address, for ordering.
+fn index_of(addr: &str) -> usize {
+    addr.rsplit_once('[')
+        .and_then(|(_, tail)| tail.strip_suffix(']'))
+        .and_then(|n| n.parse().ok())
+        .unwrap_or(0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -186,6 +280,7 @@ mod tests {
     fn anon(t: &str, i: usize, opts: &[(&str, &str)]) -> Section {
         Section {
             addr: SectionAddr::Anonymous { section_type: t.to_owned(), type_index: i },
+            internal_name: format!("cfg{i:06x}"),
             section_type: t.to_owned(),
             options: opts.iter().map(|(k, v)| ((*k).to_owned(), (*v).to_owned())).collect(),
             secret_options: vec![],
@@ -252,6 +347,7 @@ mod tests {
         let mut sections = vec![anon("rule", 0, &[("name", "wan_ssh")])];
         sections.push(Section {
             addr: SectionAddr::Named("rule_wan_ssh".to_owned()),
+            internal_name: "rule_wan_ssh".to_owned(),
             section_type: "rule".to_owned(),
             options: std::collections::BTreeMap::new(),
             secret_options: vec![],
@@ -265,11 +361,34 @@ mod tests {
     fn named_sections_are_never_proposed_for_rename() {
         let p = pkg(vec![Section {
             addr: SectionAddr::Named("lan".to_owned()),
+            internal_name: "lan".to_owned(),
             section_type: "zone".to_owned(),
             options: std::collections::BTreeMap::new(),
             secret_options: vec![],
         }]);
         assert!(propose(&p).is_empty());
+    }
+
+    #[test]
+    fn a_proposal_carries_the_internal_name_separately_from_the_display_address() {
+        // ★ This is the bug this test exists for. `uci.rename` over ubus accepts
+        // ONLY the internal name; given `@rule[0]` it answers {"ok": true} and
+        // changes nothing. A 41-rename batch once reported complete success and
+        // left the device untouched. So the two must never be conflated, and
+        // `internal` must be what the call is issued against.
+        let p = pkg(vec![anon("rule", 0, &[("name", "Allow-Ping")])]);
+        let r = propose(&p);
+        assert_eq!(r[0].from, "@rule[0]", "display address");
+        assert_eq!(r[0].internal, "cfg000000", "the address the call must use");
+        assert_ne!(r[0].from, r[0].internal, "conflating these is the silent no-op");
+    }
+
+    #[test]
+    fn positional_index_is_parsed_for_ordering() {
+        assert_eq!(index_of("@rule[12]"), 12);
+        assert_eq!(index_of("@defaults[0]"), 0);
+        // A named address has no index; it sorts as 0 and is never in a batch.
+        assert_eq!(index_of("lan"), 0);
     }
 
     #[test]
