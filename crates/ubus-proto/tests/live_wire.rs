@@ -1,167 +1,271 @@
-//! End-to-end encoder validation against a real ubus server.
+//! End-to-end validation of [`Connection`] and the encoder against a real ubus.
 //!
 //! `#[ignore]` by default: this needs a device.
 //!
-//! # What this proves that byte-parity cannot
+//! # What this proves that the other suites cannot
 //!
-//! `tests/encode.rs` reproduces the captured INVOKE byte-for-byte, which is
-//! strong evidence — but that capture's DATA attribute was **empty**
-//! (`87 00 00 04`), so it says nothing about **named blobmsg arguments**. Named
-//! args are exactly what `uci get`/`set` need, and their encoding has three
-//! independently-wrong-able details: a `namelen` that excludes the NUL, padding
-//! of the name field before the value begins, and the type code in the
-//! attribute id. A server that dislikes any of them answers `Invalid argument`
-//! and names no field.
+//! - `tests/encode.rs` reproduces the captured INVOKE byte-for-byte — strong,
+//!   but that capture's DATA attribute was **empty**, so it says nothing about
+//!   **named blobmsg arguments**, which is exactly what `uci` needs.
+//! - `tests/client.rs` exercises every framing rule against a scripted stream —
+//!   including failures a well-behaved server never produces — but a mock only
+//!   proves we agree with our own reading of the format.
 //!
-//! So this drives a real exchange and asserts on a value only the device knows.
+//! Only a device proves the argument encoding is one a real server accepts. So
+//! this asserts on values only the device knows.
 //!
 //! # How to run it
 //!
-//! ubus listens on a unix socket, local to the device. Reaching it from a
-//! workstation needs a loopback-bound relay on the device plus an `ssh -L`
-//! forward — see `docs/roteador.md` §16. Never bind such a relay to a LAN
-//! interface: ubus has no authentication, so that would publish
-//! root-equivalent control of the device to the whole segment.
+//! ubus is a unix socket, local to the device, so reaching it from a
+//! workstation needs a **loopback-bound** relay on the device plus an `ssh -L`
+//! forward. See `docs/roteador.md` §16 for the recipe and its two traps
+//! (dropbear has no `sftp-server`, so upload with `ssh 'cat > f' < f`, and no
+//! `setsid`, so keep the relay's ssh session in the foreground).
+//!
+//! ★ Never bind such a relay to a LAN interface. ubus performs **no
+//! authentication** — its socket is `srw-rw-rw-` and session auth lives only in
+//! `rpcd` above it — so a LAN-bound relay publishes root-equivalent control of
+//! the device to every host on the segment.
 //!
 //! ```sh
-//! ssh root@192.168.8.1 'lua /tmp/ubus-relay.lua 21112' &
-//! ssh -L 21112:127.0.0.1:21112 -N root@192.168.8.1 &
 //! UBUS_TEST_TCP=127.0.0.1:21112 cargo test --test live_wire -- --ignored --nocapture
 //! ```
+//!
+//! An on-device caller needs none of this and uses
+//! [`Connection::connect_unix`].
 
-use std::io::{Read, Write};
 use std::net::TcpStream;
-use ubus_proto::encode::{Value, invoke_request, lookup_request};
-use ubus_proto::{ATTR_HEADER_LEN, Attr, HEADER_LEN, Header, MessageType, attr_id};
+use ubus_proto::client::{Connection, Decoded};
+use ubus_proto::encode::Value;
 
-/// Read exactly one message: the 8-byte header, then the single attribute whose
-/// declared length the header's payload begins with.
-fn read_message(s: &mut TcpStream) -> (Header, Vec<u8>) {
-    let mut head = [0u8; HEADER_LEN];
-    s.read_exact(&mut head).expect("header");
-    let hdr = Header::decode(&head).expect("decodable header");
-
-    let mut attr_head = [0u8; ATTR_HEADER_LEN];
-    s.read_exact(&mut attr_head).expect("attr header");
-    let declared = (u32::from_be_bytes(attr_head) & 0x00ff_ffff) as usize;
-
-    let mut body = attr_head.to_vec();
-    body.resize(declared, 0);
-    s.read_exact(&mut body[ATTR_HEADER_LEN..])
-        .expect("attr body");
-    (hdr, body)
-}
-
-/// Drive one request to completion.
-///
-/// ★ A request is answered by zero or more DATA messages then exactly ONE
-/// STATUS. Reading one message and stopping leaves the STATUS queued, and the
-/// *next* request reads it as its own reply — reporting success for a call whose
-/// result it never saw. That bug was made once already while capturing INVOKE;
-/// this drains to the STATUS every time.
-fn request(s: &mut TcpStream, bytes: &[u8], seq: u16) -> (Vec<Vec<u8>>, u32) {
-    s.write_all(bytes).expect("send");
-    let mut data = Vec::new();
-    loop {
-        let (hdr, body) = read_message(s);
-        assert_eq!(hdr.seq, seq, "a reply for a sequence we did not send");
-        match hdr.message_type {
-            MessageType::Data => data.push(body),
-            MessageType::Status => {
-                let st = Attr::decode(&body)
-                    .unwrap()
-                    .children()
-                    .next()
-                    .expect("STATUS carries a code")
-                    .as_u32()
-                    .unwrap();
-                return (data, st);
-            }
-            other => panic!("unexpected {other:?} in a reply stream"),
-        }
-    }
+fn connect() -> Option<Connection<TcpStream>> {
+    let addr = std::env::var("UBUS_TEST_TCP").ok()?;
+    let s = TcpStream::connect(&addr).expect("the relay must be reachable");
+    s.set_nodelay(true).ok();
+    Some(Connection::new(s).expect("ubus must greet us with a HELLO"))
 }
 
 #[test]
 #[ignore = "needs a real ubus server reachable over a relay; see module docs"]
-fn our_encoder_drives_a_real_ubus_exchange() {
-    let Ok(addr) = std::env::var("UBUS_TEST_TCP") else {
+fn a_lookup_resolves_the_uci_object() {
+    let Some(mut c) = connect() else {
         eprintln!("UBUS_TEST_TCP unset — skipping");
         return;
     };
-    let mut s = TcpStream::connect(&addr).expect("relay must be reachable");
-    s.set_nodelay(true).ok();
+    eprintln!("  peer {:#010x}", c.peer());
 
-    // 1. The server greets us unprompted and the greeting carries our peer id.
-    //    Requests must echo it, so it cannot be invented.
-    let (hello, _) = read_message(&mut s);
-    assert_eq!(hello.message_type, MessageType::Hello);
-    let peer = hello.peer;
-    eprintln!("  HELLO: peer {peer:#010x}");
+    let objs = c.lookup("uci").expect("LOOKUP must succeed");
+    let uci = objs
+        .iter()
+        .find(|o| o.path == "uci")
+        .expect("the uci object must exist");
+    eprintln!("  uci = {:#010x}", uci.id);
 
-    // 2. LOOKUP the uci object to learn its id. Ids are not stable across
-    //    reboots, so they are resolved rather than remembered.
-    let (data, status) = request(&mut s, &lookup_request(1, peer, "uci"), 1);
-    assert_eq!(status, 0, "LOOKUP must succeed");
-    assert!(!data.is_empty(), "LOOKUP must return the object");
+    // Not asserting a literal id: it is assigned at registration and does not
+    // survive a restart of the process that owns the object, so pinning it
+    // would make this test fail for a reason that is not a defect.
+    assert_ne!(uci.id, 0);
+}
 
-    let table = Attr::decode(&data[0]).unwrap();
-    let mut obj_id = None;
-    let mut obj_path = None;
-    for a in table.children() {
-        match a.id {
-            attr_id::OBJID => obj_id = a.as_u32().ok(),
-            attr_id::OBJPATH => obj_path = a.as_str().ok().map(str::to_owned),
-            _ => {}
-        }
-    }
-    let obj_id = obj_id.expect("LOOKUP reply carries an OBJID");
-    assert_eq!(obj_path.as_deref(), Some("uci"));
-    eprintln!("  LOOKUP: uci = {obj_id:#010x}");
+/// Named string arguments, end to end, asserted on a value only the device
+/// knows. This is the case byte-parity cannot reach.
+#[test]
+#[ignore = "needs a real ubus server reachable over a relay; see module docs"]
+fn named_arguments_reach_the_server_and_return_its_own_value() {
+    let Some(mut c) = connect() else { return };
 
-    // 3. INVOKE uci.get with NAMED arguments — the part byte-parity cannot
-    //    vouch for. The value asserted is one only the device knows.
-    let args = vec![
-        ("config".to_owned(), Value::str("system")),
-        ("section".to_owned(), Value::str("@system[0]")),
-        ("option".to_owned(), Value::str("hostname")),
-    ];
-    let (data, status) = request(&mut s, &invoke_request(2, peer, obj_id, "get", &args), 2);
-    assert_eq!(
-        status, 0,
-        "uci.get must succeed; a nonzero status here means the server rejected \
-         our argument encoding"
-    );
-    assert!(!data.is_empty(), "uci.get must return a value");
+    let got = c
+        .call(
+            "uci",
+            "get",
+            &[
+                ("config".to_owned(), Value::str("system")),
+                ("section".to_owned(), Value::str("@system[0]")),
+                ("option".to_owned(), Value::str("hostname")),
+            ],
+        )
+        .expect("uci.get must succeed; a status here means the server rejected our encoding")
+        .expect("uci.get returns a value");
 
-    // ★ The reply's named values are nested one level deeper than a first
-    // reading suggests. `data[0]` is the message envelope; its children are
-    // RAW attributes (id-addressed), and the blobmsg name/value pairs live
-    // inside the DATA one. Iterating the envelope's children directly finds no
-    // names at all — which presents as "the device returned nothing" rather
-    // than as a parse error, because `as_named` correctly returns `None` for a
-    // raw attribute instead of inventing a name.
-    let envelope = Attr::decode(&data[0]).unwrap();
-    let payload = envelope
-        .children()
-        .find(|a| a.id == attr_id::DATA)
-        .expect("a uci.get reply carries a DATA attribute");
-
-    let mut hostname = None;
-    for a in payload.children() {
-        if let Ok(Some((name, v))) = a.as_named()
-            && name == "value"
-        {
-            hostname = std::str::from_utf8(v)
-                .ok()
-                .map(|s| s.trim_end_matches('\0').to_owned());
-        }
-    }
-    let hostname = hostname.expect("uci.get returns a `value`");
-    eprintln!("  INVOKE uci.get system.@system[0].hostname = {hostname:?}");
+    let hostname = got
+        .get("value")
+        .and_then(Decoded::as_str)
+        .expect("the reply carries a `value`");
+    eprintln!("  uci.get system.@system[0].hostname = {hostname:?}");
     assert!(
         !hostname.is_empty(),
-        "the device returned an empty hostname, which means the argument \
-         encoding reached the server but addressed nothing"
+        "an empty value means the encoding reached the server but addressed nothing"
     );
+}
+
+/// Two calls on one connection. If the STATUS draining in `exchange` were
+/// missing, the second call would read the first's trailing STATUS and fail on
+/// a sequence mismatch — the bug this project already made once.
+#[test]
+#[ignore = "needs a real ubus server reachable over a relay; see module docs"]
+fn sequential_calls_on_one_connection_each_get_their_own_reply() {
+    let Some(mut c) = connect() else { return };
+
+    let board = c
+        .call("system", "board", &[])
+        .expect("system.board must succeed")
+        .expect("board returns a value");
+    let model = board
+        .get("model")
+        .and_then(Decoded::as_str)
+        .expect("board reports a model");
+
+    let hostname = c
+        .call(
+            "uci",
+            "get",
+            &[
+                ("config".to_owned(), Value::str("system")),
+                ("section".to_owned(), Value::str("@system[0]")),
+                ("option".to_owned(), Value::str("hostname")),
+            ],
+        )
+        .expect("the second call must not read the first's STATUS")
+        .expect("a value")
+        .get("value")
+        .and_then(Decoded::as_str)
+        .map(str::to_owned)
+        .expect("a hostname");
+
+    eprintln!("  system.board model = {model:?}, then uci hostname = {hostname:?}");
+    assert!(!model.is_empty());
+    assert!(!hostname.is_empty());
+}
+
+/// ★ THE WRITE PATH, through our own client, on a real device.
+///
+/// §7 of the plan requires read **and** write verified on the wire before any
+/// operation may enter the generated façade spec. This is the write half.
+///
+/// # Safety, and why the order of operations is load-bearing
+///
+/// It writes an option nothing reads onto an existing package, then reverts.
+/// Nothing is committed, so `/etc/config` is never touched.
+///
+/// ★ The revert happens BEFORE any assertion about what was staged. An earlier
+/// version asserted first and panicked on a bad assertion — leaving
+/// `system.cfg01e48a.ubus_proto_live_probe='staged'` pending on the device,
+/// found afterwards by hand. Rust has no `finally`, so the ordering IS the
+/// guarantee: capture, undo, then judge what was captured. A test that mutates
+/// a real device must be unable to leave it dirty by failing.
+#[test]
+#[ignore = "needs a real ubus server reachable over a relay; see module docs"]
+fn a_write_stages_and_reverts_through_our_client() {
+    let Some(mut c) = connect() else { return };
+
+    let marker = "ubus_proto_live_probe";
+    let base = || {
+        vec![
+            ("config".to_owned(), Value::str("system")),
+            ("section".to_owned(), Value::str("@system[0]")),
+        ]
+    };
+    let pending = |d: &Option<Decoded>| -> usize {
+        match d.as_ref().and_then(|d| d.get("changes")) {
+            None => 0,
+            Some(Decoded::Array(items)) => items.len(),
+            Some(other) => panic!("unexpected shape for uci changes: {other:?}"),
+        }
+    };
+
+    // Refuse to run against a device that already has pending changes: the
+    // revert below would discard someone else's staged work.
+    //
+    // ★ MEASURED HERE: `uci changes` answers with a `changes` key whose value is
+    // blobmsg type 1 — an ARRAY — and an EMPTY array has a zero-length payload.
+    // So "clean" is the key being PRESENT and empty, not absent, and an earlier
+    // guard read those two as the same thing. It arrived as
+    // `Unknown { type_code: 1, bytes: [] }` rather than being dropped, which is
+    // the whole reason `Decoded::Unknown` exists — and is how ARRAY got measured.
+    let pre = c
+        .call("uci", "changes", &base())
+        .expect("changes must succeed");
+    assert_eq!(
+        pending(&pre),
+        0,
+        "device has pending uci changes; refusing to write. pre = {pre:?}"
+    );
+
+    // SET — stages into the delta.
+    let mut set_args = base();
+    set_args.push((
+        "values".to_owned(),
+        Value::table([(marker, Value::str("staged"))]),
+    ));
+    c.call("uci", "set", &set_args)
+        .expect("uci.set must succeed — a status here is a rejected write encoding");
+
+    // CAPTURE what was staged...
+    let staged = c
+        .call("uci", "changes", &base())
+        .expect("changes must succeed");
+
+    // ...UNDO before judging it...
+    c.call("uci", "revert", &base())
+        .expect("revert must succeed");
+    let after = c
+        .call("uci", "changes", &base())
+        .expect("changes must succeed");
+
+    // ...and only now assert.
+    //
+    // ★ On the DECODED structure, never on a Debug string. An earlier version
+    // searched `format!("{staged:?}")` for the marker and failed even though the
+    // write HAD worked, because the bytes render as decimal numbers rather than
+    // as text. A Debug-string assertion can be wrong in both directions and
+    // says nothing about shape.
+    //
+    // The shape, measured: `changes` is an ARRAY of ARRAYs, each inner list
+    // being [op, section, option, value].
+    let changes = staged
+        .as_ref()
+        .and_then(|d| d.get("changes"))
+        .and_then(Decoded::as_array)
+        .expect("changes must decode as an array");
+
+    let entry = changes
+        .iter()
+        .find_map(|e| {
+            let f: Vec<&str> = e.as_array()?.iter().filter_map(Decoded::as_str).collect();
+            f.contains(&marker).then_some(f)
+        })
+        .unwrap_or_else(|| panic!("uci.set reported success but staged nothing: {changes:?}"));
+
+    eprintln!("  staged change: {entry:?}");
+    assert_eq!(entry.first(), Some(&"set"), "the op must be `set`");
+    assert!(
+        entry.contains(&"staged"),
+        "the staged VALUE must be on the wire, not just the option name: {entry:?}"
+    );
+
+    assert_eq!(
+        pending(&after),
+        0,
+        "revert did not undo the staged change: {after:?}"
+    );
+    eprintln!("  reverted: device is clean");
+}
+
+/// A nonzero status must arrive as the server's verdict, not as an empty value.
+#[test]
+#[ignore = "needs a real ubus server reachable over a relay; see module docs"]
+fn a_nonexistent_config_is_reported_as_a_status_not_as_nothing() {
+    let Some(mut c) = connect() else { return };
+
+    let err = c
+        .call(
+            "uci",
+            "get",
+            &[(
+                "config".to_owned(),
+                Value::str("definitely_not_a_package_xyz"),
+            )],
+        )
+        .expect_err("an absent package must not read as success");
+    eprintln!("  absent package -> {err}");
 }

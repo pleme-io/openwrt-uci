@@ -23,7 +23,7 @@ use crate::{ATTR_HEADER_LEN, EXTENDED_BIT, HEADER_LEN, ID_SHIFT_BITS, MessageTyp
 
 /// blobmsg type codes, as **measured** from the captured LOOKUP response.
 ///
-/// Only the three that appear in the capture are named. The rest of libubox's
+/// Only the four seen on this wire are named. The rest of libubox's
 /// enum is deliberately absent: naming a code this crate has never seen on the
 /// wire would be exactly the recollection-over-measurement the project forbids.
 ///
@@ -36,7 +36,20 @@ use crate::{ATTR_HEADER_LEN, EXTENDED_BIT, HEADER_LEN, ID_SHIFT_BITS, MessageTyp
 ///   that parameter is `"bus":"String"`, so the four-byte value `3` is the type
 ///   code for a string, and the attribute carrying a four-byte integer is
 ///   itself id 5. ⇒ `STRING = 3`, `INT32 = 5`.
+/// - `81 00 00 58` — extended, id 1, returned as the value of `uci changes`'s
+///   `changes` key, containing one element which is itself an id-1 attribute
+///   holding the four strings `set`, `cfg01e48a`, `<option>`, `<value>`. A list
+///   of lists. ⇒ `ARRAY = 1`.
+///
+///   ★ And the element layout, measured from those same bytes: an array's
+///   members are ordinary blobmsg attributes with **`namelen = 0`** — an empty
+///   name and its NUL, padded to 4, then the value. So an array is positional
+///   and a table is keyed, using one attribute encoding. An **empty** array has
+///   a zero-length payload, which is why "no pending changes" arrives as the
+///   key being present-and-empty rather than absent.
 pub mod blobmsg_type {
+    /// A positional list of unnamed attributes.
+    pub const ARRAY: u8 = 1;
     /// A table of named attributes.
     pub const TABLE: u8 = 2;
     /// A NUL-terminated string.
@@ -48,13 +61,17 @@ pub mod blobmsg_type {
 /// A blobmsg value, limited to the shapes this crate has measured.
 ///
 /// `uci`'s whole argument surface — `config`, `section`, `option`, `type`,
-/// `match`, `values` — is strings and tables of strings, so these three cover
-/// it. An unmeasured type is a compile error rather than a wire surprise.
+/// `match`, `values`, `options` — is strings, tables of strings and lists of
+/// strings, so these four cover it. An unmeasured type is a compile error
+/// rather than a wire surprise.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Str(String),
     I32(i32),
     Table(Vec<(String, Value)>),
+    /// A positional list. Its members are encoded with an empty name, which is
+    /// the layout measured off `uci changes` — see [`blobmsg_type::ARRAY`].
+    Array(Vec<Value>),
 }
 
 impl Value {
@@ -73,6 +90,7 @@ impl Value {
             Self::Str(_) => blobmsg_type::STRING,
             Self::I32(_) => blobmsg_type::INT32,
             Self::Table(_) => blobmsg_type::TABLE,
+            Self::Array(_) => blobmsg_type::ARRAY,
         }
     }
 
@@ -92,6 +110,14 @@ impl Value {
                 let mut v = Vec::new();
                 for (name, val) in pairs {
                     push_named(&mut v, name, val);
+                }
+                v
+            }
+            // An array member is a named attribute whose name is EMPTY.
+            Self::Array(items) => {
+                let mut v = Vec::new();
+                for item in items {
+                    push_named(&mut v, "", item);
                 }
                 v
             }
