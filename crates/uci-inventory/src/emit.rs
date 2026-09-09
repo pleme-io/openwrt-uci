@@ -13,15 +13,36 @@ use crate::inventory::{Inventory, SectionAddr};
 use crate::rename::Rename;
 use ubus_facade::json::Json;
 
+/// Which sections a derived values document should carry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Scope {
+    /// Only sections with a stable identity — the safe default.
+    StableOnly,
+    /// Also sections addressed positionally (`@type[N]`).
+    ///
+    /// ★ Opt-in, because a positional address committed to git is a latent
+    /// wrong answer rather than a latent error: inserting or deleting a section
+    /// of the same type renumbers the rest, so a declaration keeps resolving —
+    /// to a different section — and a reconciler then "corrects" whatever now
+    /// sits at that index. Use only for a throwaway proof, or after the
+    /// renames in [`crate::rename`] have been applied.
+    IncludePositional,
+}
+
 /// The Helm values document for the managed set.
 ///
 /// Shaped to drop straight into `charts/roteador-router` as an extra `-f`, so
 /// the derived config composes with the hand-written router values rather than
 /// replacing them.
+///
+/// Defaults to [`Scope::StableOnly`] because the output of this function is
+/// meant to be COMMITTED, and the unstable half must not become committed
+/// config by omission.
 #[must_use]
-pub fn helm_values(inv: &Inventory) -> Json {
+pub fn helm_values_scoped(inv: &Inventory, scope: Scope) -> Json {
     let sections: Vec<Json> = inv
         .managed_sections()
+        .filter(|(_, s)| scope == Scope::IncludePositional || !s.addr.is_anonymous())
         .map(|(pkg, s)| {
             let values: Vec<(String, Json)> = s
                 .options
@@ -39,6 +60,12 @@ pub fn helm_values(inv: &Inventory) -> Json {
     Json::obj([("sections", Json::Arr(sections))])
 }
 
+/// [`helm_values_scoped`] with the safe default scope.
+#[must_use]
+pub fn helm_values(inv: &Inventory) -> Json {
+    helm_values_scoped(inv, Scope::StableOnly)
+}
+
 /// The import identities for the managed set, in terraform-address order.
 ///
 /// Each entry is `{to, id}` — the shape a config-driven `import` block takes —
@@ -48,9 +75,10 @@ pub fn helm_values(inv: &Inventory) -> Json {
 /// `pending-declarative-import`: magma's handling of config-driven `import`
 /// blocks is unmeasured, so today these are consumed by the CLI import path.
 #[must_use]
-pub fn imports(inv: &Inventory) -> Json {
+pub fn imports_scoped(inv: &Inventory, scope: Scope) -> Json {
     let entries: Vec<Json> = inv
         .managed_sections()
+        .filter(|(_, s)| scope == Scope::IncludePositional || !s.addr.is_anonymous())
         .map(|(pkg, s)| {
             Json::obj([
                 ("to", Json::str(terraform_address(pkg, &s.addr))),
@@ -60,6 +88,12 @@ pub fn imports(inv: &Inventory) -> Json {
         })
         .collect();
     Json::obj([("import", Json::Arr(entries))])
+}
+
+/// [`imports_scoped`] with the safe default scope.
+#[must_use]
+pub fn imports(inv: &Inventory) -> Json {
+    imports_scoped(inv, Scope::StableOnly)
 }
 
 /// The `openwrt_uci_section.<name>` address for a section.
@@ -234,6 +268,17 @@ mod tests {
                 "illegal terraform address: {addr}"
             );
         }
+    }
+
+    #[test]
+    fn the_default_scope_excludes_positional_identities() {
+        // inv() has one named and one anonymous managed section.
+        let safe = helm_values(&inv()).render();
+        assert!(safe.contains("\"section\": \"lan\""));
+        assert!(!safe.contains("@device[2]"), "positional identity in committable output");
+        // And the opt-in includes it.
+        let all = helm_values_scoped(&inv(), Scope::IncludePositional).render();
+        assert!(all.contains("@device[2]"));
     }
 
     #[test]
