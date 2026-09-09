@@ -197,6 +197,19 @@ pub const CATALOG: &[(&str, Disposition)] = &[
     ("plugins", Disposition::DeviceOwned { why: "vendor plugin registry" }),
     ("oui-httpd", Disposition::DeviceOwned { why: "vendor web-UI daemon config" }),
     ("switch", Disposition::DeviceOwned { why: "legacy swconfig hardware map" }),
+    // ── Found by the SECOND device (2026-09-09) ─────────────────────────────
+    // The gate refusing an unclassified package is what surfaced these; the
+    // first router carried none of them. Worth noting how ordinary the causes
+    // are: a different firmware lineage, and a human opening a web UI.
+    ("gl-dns", Disposition::DeviceOwned {
+        why: "vendor DNS app state; the `-v2` sibling of gl-dns-v2 on other firmware",
+    }),
+    ("luci", Disposition::DeviceOwned {
+        why: "LuCI web-UI preferences — written the moment someone opens LuCI",
+    }),
+    ("ucitrack", Disposition::DeviceOwned {
+        why: "OpenWrt's own uci-change -> service-reload map; the init system owns it",
+    }),
 ];
 
 /// The disposition for `package`, or `None` if the catalog has never seen it.
@@ -291,6 +304,8 @@ mod tests {
             "repeater", "roteador", "route_policy", "rpcd", "rtty", "samba4", "sip_alg", "sqm",
             "stubby", "switch-button", "system", "tailscale", "tor", "ubootenv", "uhttpd",
             "upgrade", "wan-access", "wireguard", "wireguard_server", "wireless", "zerotier",
+            // Added by the second GL-MT6000, 2026-09-09.
+            "gl-dns", "luci", "ucitrack",
         ] {
             assert!(classify(p).is_some(), "unclassified measured package: {p}");
         }

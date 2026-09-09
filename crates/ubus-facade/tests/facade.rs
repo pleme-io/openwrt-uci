@@ -216,7 +216,7 @@ fn every_measured_type_maps_to_a_json_schema_type() {
         (UbusType::Table, "object"),
         (UbusType::Array, "array"),
     ] {
-        assert_eq!(t.json_type(), want);
+        assert_eq!(t.json_type(), Some(want));
     }
 }
 
@@ -316,4 +316,32 @@ fn every_endpoint_named_by_a_resource_spec_exists_in_the_facade() {
             "resource spec names endpoint {e:?}, which the façade does not serve"
         );
     }
+}
+
+/// ★ `(unknown)` is ubus DECLINING to name a type, not a sixth type.
+///
+/// Measured on a second GL-MT6000 (2026-09-09): `network.rrdns.lookup` declares
+/// `"port":"(unknown)"`. The first router did not carry that service, so one
+/// device was never going to surface it — which is the argument for the
+/// catalog refusing unknown types loudly instead of guessing.
+#[test]
+fn unspecified_emits_no_type_constraint() {
+    use ubus_facade::catalog::UbusType;
+    // It parses...
+    let spec = Catalog::parse(
+        "'network.rrdns' @1b060d29\n\t\"lookup\":{\"port\":\"(unknown)\"}\n",
+    )
+    .expect("`(unknown)` must parse, not refuse");
+    // ...and carries no JSON type.
+    assert_eq!(UbusType::Unspecified.json_type(), None);
+    let doc = ubus_facade::openapi::build(&spec, "0.0.0").render();
+    // The parameter is present...
+    assert!(doc.contains("port"), "the parameter must still be described");
+    // ...but nothing claims it is an integer just because it is called `port`.
+    let port_region = &doc[doc.find("port").expect("port present")..];
+    let window = &port_region[..port_region.len().min(160)];
+    assert!(
+        !window.contains("\"type\": \"integer\""),
+        "an unspecified type must not be given a constraint ubus never promised:\n{window}"
+    );
 }

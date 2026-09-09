@@ -43,6 +43,19 @@ pub enum UbusType {
     Boolean,
     Table,
     Array,
+    /// ubus itself rendered the type as `(unknown)`.
+    ///
+    /// ★ NOT a guess and NOT a sixth data type — it is ubus DECLINING to name
+    /// one, which the wire spells literally `(unknown)`. Measured 2026-09-09 on
+    /// a second GL-MT6000: `network.rrdns.lookup` declares
+    /// `"port":"(unknown)"`. The first device did not carry that service at
+    /// all, which is why one router was never enough to find this.
+    ///
+    /// It maps to a schema with NO `type` keyword — an unconstrained value —
+    /// because the honest translation of "the source does not know" is "do not
+    /// claim". Inventing `integer` here (which `port` obviously suggests) would
+    /// put a constraint into a generated provider that ubus never promised.
+    Unspecified,
 }
 
 impl UbusType {
@@ -53,19 +66,24 @@ impl UbusType {
             "Boolean" => Some(Self::Boolean),
             "Table" => Some(Self::Table),
             "Array" => Some(Self::Array),
+            "(unknown)" => Some(Self::Unspecified),
             _ => None,
         }
     }
 
-    /// The JSON Schema type this maps to.
+    /// The JSON Schema type this maps to, or `None` for an unconstrained value.
+    ///
+    /// `None` is [`Self::Unspecified`] and means the emitter must omit the
+    /// `type` keyword entirely rather than pick one. See that variant.
     #[must_use]
-    pub const fn json_type(self) -> &'static str {
+    pub const fn json_type(self) -> Option<&'static str> {
         match self {
-            Self::String => "string",
-            Self::Integer => "integer",
-            Self::Boolean => "boolean",
-            Self::Table => "object",
-            Self::Array => "array",
+            Self::String => Some("string"),
+            Self::Integer => Some("integer"),
+            Self::Boolean => Some("boolean"),
+            Self::Table => Some("object"),
+            Self::Array => Some("array"),
+            Self::Unspecified => None,
         }
     }
 }

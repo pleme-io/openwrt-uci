@@ -211,7 +211,13 @@ fn schema(method: &Method) -> Json {
         .params
         .iter()
         .map(|p| {
-            let mut fields = vec![("type".to_owned(), Json::str(p.ty.json_type()))];
+            // An Unspecified parameter emits NO `type`, leaving the value
+            // unconstrained — see UbusType::Unspecified for why that is the
+            // honest rendering rather than a guess.
+            let mut fields: Vec<(String, Json)> = match p.ty.json_type() {
+                Some(t) => vec![("type".to_owned(), Json::str(t))],
+                None => Vec::new(),
+            };
             // ★ An `Array`'s element type is NOT in `ubus -v list` — the catalog
             // reports the container only. So `items` is an EMPTY SCHEMA, which
             // is OpenAPI's own way of writing "any value": it constrains
