@@ -76,6 +76,10 @@ pub fn json_from_decoded(d: &Decoded) -> Json {
     match d {
         Decoded::Str(s) => Json::str(s.clone()),
         Decoded::I32(i) => Json::Int(i64::from(*i)),
+        // ubus aliases BOOL to INT8, so a boolean field renders as 0/1 rather
+        // than true/false. Rendering it as a bool would claim to know which of
+        // the two the sender meant.
+        Decoded::I8(i) => Json::Int(i64::from(*i)),
         Decoded::Array(items) => Json::Arr(items.iter().map(json_from_decoded).collect()),
         Decoded::Table(pairs) => Json::Obj(
             pairs

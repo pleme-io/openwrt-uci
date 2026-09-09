@@ -56,6 +56,16 @@ pub mod blobmsg_type {
     pub const STRING: u8 = 3;
     /// A big-endian 32-bit integer.
     pub const INT32: u8 = 5;
+    /// One byte. **Measured 2026-09-09** off `uci.get`'s `.anonymous` field,
+    /// which `Decoded::Unknown` surfaced as `type_code: 7, byteLength: 1` —
+    /// exactly the characterise-don't-guess path that arm exists for.
+    ///
+    /// libubox aliases `BLOBMSG_TYPE_BOOL` to `INT8`, so a boolean on this wire
+    /// IS an int8. That alias is why this is decoded as a number rather than a
+    /// bool: the wire cannot tell them apart, and inventing a bool here would
+    /// be an interpretation dressed as a measurement. Callers that know a field
+    /// is boolean read `0`/`1`.
+    pub const INT8: u8 = 7;
 }
 
 /// A blobmsg value, limited to the shapes this crate has measured.

@@ -48,6 +48,10 @@ use std::io::{Read, Write};
 pub enum Decoded {
     Str(String),
     I32(i32),
+    /// A one-byte integer. ubus also uses this type for booleans — libubox
+    /// aliases `BLOBMSG_TYPE_BOOL` to `INT8` — so `.anonymous` arrives here as
+    /// `0` or `1`. See [`crate::encode::blobmsg_type::INT8`].
+    I8(i8),
     Table(Vec<(String, Decoded)>),
     /// A positional list — `uci changes` returns one, of lists.
     Array(Vec<Decoded>),
@@ -420,6 +424,12 @@ fn decode_value(type_code: u8, raw: &[u8]) -> Result<Decoded, ClientError> {
                 .and_then(|s| s.try_into().ok())
                 .ok_or_else(|| ClientError::Malformed("int32 shorter than 4 bytes".into()))?;
             Ok(Decoded::I32(i32::from_be_bytes(b)))
+        }
+        blobmsg_type::INT8 => {
+            let b = *raw
+                .first()
+                .ok_or_else(|| ClientError::Malformed("int8 with no bytes".into()))?;
+            Ok(Decoded::I8(i8::from_be_bytes([b])))
         }
         blobmsg_type::TABLE => decode_named_run(raw),
         // ★ An array's members carry an EMPTY name (`namelen = 0`), so they are
