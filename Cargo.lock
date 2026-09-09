@@ -28,3 +28,10 @@ dependencies = [
 [[package]]
 name = "ubus-proto"
 version = "0.1.0"
+
+[[package]]
+name = "uci-inventory"
+version = "0.1.0"
+dependencies = [
+ "ubus-facade",
+]

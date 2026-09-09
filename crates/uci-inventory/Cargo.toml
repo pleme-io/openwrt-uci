@@ -1,0 +1,18 @@
+[package]
+name = "uci-inventory"
+description = "Survey an OpenWrt device's whole UCI surface, classify every package, and derive declared config from what is actually there."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[dependencies]
+ubus-facade = { path = "../ubus-facade", version = "0.1.0" }
+
+[lints]
+workspace = true

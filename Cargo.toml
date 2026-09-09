@@ -3,6 +3,7 @@ resolver = "3"
 members = [
   "crates/openwrt-uci",
   "crates/openwrt-uci-transport",
+  "crates/uci-inventory",
   "crates/ubus-facade",
   "crates/ubus-http",
   "crates/ubus-proto",
