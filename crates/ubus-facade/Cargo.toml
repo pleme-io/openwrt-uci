@@ -1,0 +1,14 @@
+[package]
+name = "ubus-facade"
+description = "Generate an OpenAPI façade from an OpenWrt device's own `ubus -v list` catalog"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[lints]
+workspace = true

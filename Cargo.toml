@@ -1,6 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["crates/openwrt-uci", "crates/openwrt-uci-transport", "crates/ubus-proto"]
+members = [
+  "crates/openwrt-uci",
+  "crates/openwrt-uci-transport",
+  "crates/ubus-facade",
+  "crates/ubus-proto",
+]
 
 [workspace.package]
 version = "0.1.0"
