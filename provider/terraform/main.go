@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -211,7 +212,7 @@ func (r *uciSectionResource) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddError("uci commit failed", err.Error())
 		return
 	}
-	m.ID = types.StringValue(m.Config.ValueString() + "." + m.Section.ValueString())
+	m.ID = types.StringValue(sectionID(m.Config.ValueString(), m.Section.ValueString()))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
 }
 
@@ -238,7 +239,20 @@ func (r *uciSectionResource) Read(ctx context.Context, req resource.ReadRequest,
 				asStr[k] = s
 			}
 		}
-		// `.type` is UCI bookkeeping, not an option, and must not appear as one.
+		// ★ `.type` is read BEFORE it is deleted, and it populates the `type`
+		// attribute rather than being discarded.
+		//
+		// Two things depend on this. An IMPORTED resource has no `type` in
+		// state — nothing has ever set it — so without this line the first
+		// plan after an import wants to write a Required attribute it cannot
+		// know, and the import is unusable. And a section whose type was
+		// changed on the device was previously invisible: `type` came from
+		// state and state was never corrected, so the one field UCI treats as
+		// the section's KIND was the one field drift detection could not see.
+		if ty, ok := vals[".type"].(string); ok && ty != "" {
+			m.Type = types.StringValue(ty)
+		}
+		// UCI bookkeeping, not options — must not appear as ones.
 		delete(asStr, ".type")
 		delete(asStr, ".name")
 		delete(asStr, ".anonymous")
@@ -248,6 +262,8 @@ func (r *uciSectionResource) Read(ctx context.Context, req resource.ReadRequest,
 			m.Values = mv
 		}
 	}
+	// Computed, so it is null on an imported resource until something sets it.
+	m.ID = types.StringValue(sectionID(m.Config.ValueString(), m.Section.ValueString()))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
 }
 
@@ -274,7 +290,7 @@ func (r *uciSectionResource) Update(ctx context.Context, req resource.UpdateRequ
 		resp.Diagnostics.AddError("uci commit failed", err.Error())
 		return
 	}
-	m.ID = types.StringValue(m.Config.ValueString() + "." + m.Section.ValueString())
+	m.ID = types.StringValue(sectionID(m.Config.ValueString(), m.Section.ValueString()))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
 }
 
@@ -296,8 +312,40 @@ func (r *uciSectionResource) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 }
 
+// sectionID is the one place the composite identity is spelled, so the format
+// `ImportState` parses and the format `Read` writes cannot drift apart.
+func sectionID(pkg, section string) string { return pkg + "." + section }
+
+// ImportState adopts a section that already exists on the device.
+//
+// ★ This was `ImportStatePassthroughID` and that is WRONG for this resource,
+// which is why adopting an existing router was impossible. Passthrough sets
+// only `id`; `config` and `section` stay null, and `Read` then asks the device
+// for `/uci/get {config:"", section:""}`. The failure is not a clean error
+// either — Read treats a failed get as a DELETED section and calls
+// RemoveResource, so a passthrough import silently produced an empty state and
+// the next plan proposed creating sections that already exist.
+//
+// Splitting on the FIRST dot is exact rather than convenient: UCI package and
+// section names are `[A-Za-z0-9_]+`, so neither half can contain a dot. An
+// anonymous section's positional address (`firewall.@rule[0]`) also survives
+// the split, so anonymous sections are importable — though their address is
+// positional and shifts if an earlier section of the same type is removed.
 func (r *uciSectionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	pkg, section, found := strings.Cut(req.ID, ".")
+	if !found || pkg == "" || section == "" {
+		resp.Diagnostics.AddError(
+			"malformed import id",
+			fmt.Sprintf("expected `<config>.<section>` (e.g. `firewall.wan_ssh`, or `firewall.@rule[0]` for an anonymous section), got %q. "+
+				"UCI section names are unique only within their package, so the package is part of the identity.", req.ID),
+		)
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), sectionID(pkg, section))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("config"), pkg)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("section"), section)...)
+	// `type` and `values` are deliberately left for Read, which is the only
+	// thing that knows them — see the note there.
 }
 
 // ---- server ----
