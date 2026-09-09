@@ -273,10 +273,51 @@ func (r *uciSectionResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// ★ The PRIOR state is needed, not just the plan, because `uci set` is
+	// ADDITIVE and `values` is meant to be AUTHORITATIVE.
+	//
+	// Without this the resource cannot converge on a removal. Read populates
+	// state with every option the device has; if the config declares fewer,
+	// plan proposes dropping the extras, `uci set` writes only what it was
+	// given and leaves them in place, and the next Read finds them again — so
+	// the same plan is proposed forever. Every apply "succeeds", nothing is
+	// ever wrong twice in a row, and the section never reaches desired state.
+	// A reconciler that reports Ready on every pass while never converging is
+	// the failure this deletes.
+	var prior uciSectionModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &prior)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	vals, err := m.valueMap(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("invalid values", err.Error())
 		return
+	}
+	priorVals, err := prior.valueMap(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError("invalid prior values", err.Error())
+		return
+	}
+	// Options the device has that the config no longer declares.
+	var removed []any
+	for k := range priorVals {
+		if _, keep := vals[k]; !keep {
+			removed = append(removed, k)
+		}
+	}
+	if len(removed) > 0 {
+		// Deleted BEFORE the set, so a single failure leaves the section with
+		// the old value rather than half-applied: uci stages both into one
+		// per-package delta and one commit publishes them together.
+		if _, err := r.c.call(ctx, "/uci/delete", map[string]any{
+			"config":  m.Config.ValueString(),
+			"section": m.Section.ValueString(),
+			"options": removed,
+		}); err != nil {
+			resp.Diagnostics.AddError("uci delete (of undeclared options) failed", err.Error())
+			return
+		}
 	}
 	if _, err := r.c.call(ctx, "/uci/set", map[string]any{
 		"config":  m.Config.ValueString(),
