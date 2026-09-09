@@ -994,7 +994,8 @@
                   },
                   "slot_priority": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -1884,7 +1885,8 @@
                   },
                   "patterns": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -2183,7 +2185,8 @@
                   },
                   "params": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   },
                   "env": {
                     "type": "object"
@@ -3503,7 +3506,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3543,7 +3547,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3583,7 +3588,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3623,7 +3629,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3663,7 +3670,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3703,7 +3711,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3743,7 +3752,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3783,7 +3793,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3823,7 +3834,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3863,7 +3875,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3903,7 +3916,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3943,7 +3957,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -3983,7 +3998,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -4023,7 +4039,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -4063,7 +4080,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -4103,7 +4121,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -4143,7 +4162,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -4183,7 +4203,8 @@
                 "properties": {
                   "env": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -5032,7 +5053,8 @@
                 "properties": {
                   "alias": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   },
                   "device": {
                     "type": "string"
@@ -5371,7 +5393,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -5417,7 +5440,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -5778,7 +5802,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -5824,7 +5849,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -6185,7 +6211,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -6231,7 +6258,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -6592,7 +6620,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -6638,7 +6667,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -6999,7 +7029,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -7045,7 +7076,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -7406,7 +7438,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -7452,7 +7485,8 @@
                   },
                   "vlan": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -8066,7 +8100,8 @@
                   },
                   "dns": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   },
                   "identity": {
                     "type": "string"
@@ -8535,11 +8570,13 @@
                   },
                   "triggers": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   },
                   "validate": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   },
                   "autostart": {
                     "type": "boolean"
@@ -8594,11 +8631,13 @@
                   },
                   "triggers": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   },
                   "validate": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   },
                   "autostart": {
                     "type": "boolean"
@@ -9152,7 +9191,8 @@
                   },
                   "objects": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -9196,7 +9236,8 @@
                   },
                   "objects": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -9323,7 +9364,8 @@
                 "properties": {
                   "keys": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -9364,7 +9406,8 @@
                 "properties": {
                   "keys": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -10068,7 +10111,8 @@
                   },
                   "options": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false
@@ -10161,7 +10205,8 @@
                   },
                   "sections": {
                     "type": "array",
-                    "description": "Element type is not reported by `ubus -v list`; unconstrained rather than guessed."
+                    "items": {},
+                    "description": "Element type is not reported by `ubus -v list`; the empty `items` schema is unconstrained by measurement, not by oversight."
                   }
                 },
                 "additionalProperties": false

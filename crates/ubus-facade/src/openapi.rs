@@ -172,16 +172,28 @@ fn schema(method: &Method) -> Json {
         .iter()
         .map(|p| {
             let mut fields = vec![("type".to_owned(), Json::str(p.ty.json_type()))];
-            // An `Array`'s element type is NOT in `ubus -v list` — the catalog
-            // reports the container only. Emitting a guessed `items` would be a
-            // schema this project never measured, so the constraint is simply
-            // absent and said to be absent.
+            // ★ An `Array`'s element type is NOT in `ubus -v list` — the catalog
+            // reports the container only. So `items` is an EMPTY SCHEMA, which
+            // is OpenAPI's own way of writing "any value": it constrains
+            // nothing, and it invents nothing.
+            //
+            // It cannot simply be omitted. OpenAPI 3.0 makes `items` mandatory
+            // on `type: array`, and leaving it out produced a document that
+            // `forge-gen validate` accepted with NO WARNINGS while
+            // `openapi-generator-cli` refused outright — 45 times, once per
+            // array parameter. Measured 2026-09-08.
+            //
+            // Worth keeping as a lesson about validators: a passing
+            // `forge-gen validate` is not evidence that a generator will accept
+            // the spec. Only running a generator is.
             if p.ty == UbusType::Array {
+                fields.push(("items".to_owned(), Json::Obj(Vec::new())));
                 fields.push((
                     "description".to_owned(),
                     Json::str(
-                        "Element type is not reported by `ubus -v list`; unconstrained \
-                         rather than guessed.",
+                        "Element type is not reported by `ubus -v list`; the empty \
+                         `items` schema is unconstrained by measurement, not by \
+                         oversight.",
                     ),
                 ));
             }

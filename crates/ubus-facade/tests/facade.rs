@@ -110,6 +110,43 @@ fn a_closed_schema_is_the_default_for_fully_described_methods() {
     assert_eq!(closed, 263, "every other method is closed");
 }
 
+/// ★ Every `array` property must carry an `items` schema.
+///
+/// `OpenAPI` 3.0 makes `items` MANDATORY on `type: array`. Omitting it — which is
+/// what "we did not measure the element type" naively suggests — produced a
+/// document that `forge-gen validate` accepted with **no warnings** while
+/// `openapi-generator-cli` refused outright, once per array parameter (45).
+///
+/// The fix is not a guessed element type: an EMPTY `items` schema is `OpenAPI`'s
+/// own way of writing "any value", so it constrains nothing and invents
+/// nothing.
+///
+/// The generalizable lesson, and the reason this test exists rather than a
+/// comment: **a passing validator is not evidence that a generator will accept
+/// the spec.** Only running a generator is.
+#[test]
+fn every_array_property_carries_an_items_schema() {
+    let c = Catalog::parse(CAPTURE).unwrap();
+    let arrays = c
+        .objects
+        .iter()
+        .flat_map(|o| &o.methods)
+        .flat_map(|m| &m.params)
+        .filter(|p| p.ty == UbusType::Array)
+        .count();
+    assert_eq!(arrays, 45, "the capture's array parameters");
+    assert_eq!(
+        GOLDEN.matches("\"items\"").count(),
+        arrays,
+        "one items schema per array property, or openapi-generator-cli refuses \
+         the document"
+    );
+    assert!(
+        GOLDEN.contains("\"items\": {}"),
+        "empty schema, not a guess"
+    );
+}
+
 #[test]
 fn object_ids_never_reach_the_spec() {
     // The capture is full of `@575a75e0`. They are ephemeral, so baking one in
