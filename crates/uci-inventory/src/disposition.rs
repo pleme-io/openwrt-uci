@@ -118,7 +118,22 @@ pub const CATALOG: &[(&str, Disposition)] = &[
     ("ovpnclient", Disposition::SecretBearing { why: "embedded keys / auth material" }),
     ("ovpnserver", Disposition::SecretBearing { why: "embedded keys / auth material" }),
     ("expressvpn", Disposition::SecretBearing { why: "third-party VPN credentials" }),
-    ("tailscale", Disposition::SecretBearing { why: "may carry an auth key" }),
+    // ★ MEASURED 2026-09-09 and RECLASSIFIED from SecretBearing.
+    //
+    // The precautionary guess was "may carry an auth key". It does not: the
+    // whole UCI surface is `enabled`, `port`, `state_file`, `log_stdout`,
+    // `log_stderr` — read by `/etc/init.d/tailscale`, which starts `tailscaled`
+    // and never runs `tailscale up`. The node key and auth material live in the
+    // file that `state_file` NAMES (`/etc/tailscale/tailscaled.state`), and a
+    // path is not material.
+    //
+    // That split is what makes tailscale declarable at all: the DAEMON is UCI
+    // and reconciles like anything else, while the tailnet LOGIN is a one-time
+    // bootstrap whose result persists in the state file.
+    //
+    // `pending-tailscale-login-declared: `tailscale up` is a bootstrap step,
+    // like the adapter install — the auth key comes from sops `tailscale/auth-key`.`
+    ("tailscale", MANAGED),
     ("zerotier", Disposition::SecretBearing { why: "network identity / secrets" }),
     ("tor", Disposition::SecretBearing { why: "onion service keys" }),
     ("samba4", Disposition::SecretBearing { why: "share credentials" }),
