@@ -205,6 +205,64 @@ pub fn renames(rs: &[Rename]) -> Json {
     ])
 }
 
+/// The `sections:` block as YAML, for a chart values file.
+///
+/// ★ Exists to delete a hand-rolled converter. The derive pipeline briefly
+/// depended on an ad-hoc script that quoted YAML by guessing which strings
+/// needed it — a class of bug that corrupts a router's declaration silently
+/// and is caught only by an apply going wrong.
+///
+/// The quoting rule here is DELIBERATELY BLUNT: every scalar is emitted as a
+/// double-quoted string with `"` and `\` escaped. UCI option values are
+/// strings, so nothing is lost, and quoting everything removes the entire
+/// question of which YAML plain-scalar forms would be reinterpreted as bools,
+/// nulls, numbers or timestamps. `no`, `on`, `1.0` and `22:00` are all real
+/// UCI values and all of them mean something else unquoted.
+#[must_use]
+pub fn helm_values_yaml(inv: &Inventory, scope: Scope) -> String {
+    fn q(s: &str) -> String {
+        let mut out = String::with_capacity(s.len() + 2);
+        out.push('"');
+        for c in s.chars() {
+            match c {
+                '"' => out.push_str("\\\""),
+                '\\' => out.push_str("\\\\"),
+                '\n' => out.push_str("\\n"),
+                _ => out.push(c),
+            }
+        }
+        out.push('"');
+        out
+    }
+    let mut o = String::from("sections:\n");
+    let mut rows: Vec<(&str, &crate::inventory::Section)> = inv
+        .managed_sections()
+        .filter(|(_, s)| scope == Scope::IncludePositional || !s.addr.is_anonymous())
+        .collect();
+    rows.sort_by(|a, b| (a.0, a.1.addr.as_uci()).cmp(&(b.0, b.1.addr.as_uci())));
+    for (pkg, s) in rows {
+        o.push_str("  - config: ");
+        o.push_str(&q(pkg));
+        o.push_str("\n    section: ");
+        o.push_str(&q(&s.addr.as_uci()));
+        o.push_str("\n    type: ");
+        o.push_str(&q(&s.section_type));
+        if s.options.is_empty() {
+            o.push_str("\n    values: {}\n");
+        } else {
+            o.push_str("\n    values:\n");
+            for (k, v) in &s.options {
+                o.push_str("      ");
+                o.push_str(&q(k));
+                o.push_str(": ");
+                o.push_str(&q(v));
+                o.push('\n');
+            }
+        }
+    }
+    o
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -271,6 +329,34 @@ mod tests {
                 "illegal terraform address: {addr}"
             );
         }
+    }
+
+    #[test]
+    fn yaml_quotes_every_scalar_so_uci_values_survive() {
+        // ★ `no`, `on`, `1.0`, `22:00` are all real UCI values and all mean
+        // something else as YAML plain scalars. Quoting everything is what
+        // makes this safe without a per-value decision.
+        let mut options = BTreeMap::new();
+        options.insert("a".to_owned(), "no".to_owned());
+        options.insert("b".to_owned(), "1.0".to_owned());
+        options.insert("c".to_owned(), "22:00".to_owned());
+        let inv = Inventory {
+            packages: vec![Package {
+                name: "x".to_owned(),
+                disposition: Disposition::Managed,
+                sections: vec![Section {
+                    addr: SectionAddr::Named("s".to_owned()),
+                    internal_name: "s".to_owned(),
+                    section_type: "t".to_owned(),
+                    options,
+                    secret_options: vec![],
+                }],
+            }],
+        };
+        let y = helm_values_yaml(&inv, Scope::StableOnly);
+        assert!(y.contains("\"a\": \"no\""), "got:\n{y}");
+        assert!(y.contains("\"b\": \"1.0\""), "got:\n{y}");
+        assert!(y.contains("\"c\": \"22:00\""), "got:\n{y}");
     }
 
     #[test]

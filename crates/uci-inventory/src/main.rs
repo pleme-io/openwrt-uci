@@ -17,7 +17,8 @@ USAGE:
 
 SUBCOMMANDS:
     survey     coverage report: what exists, what we manage, why we decline the rest
-    values     Helm values (JSON, which Helm accepts) for the managed set
+    values     Helm values for the managed set (JSON; --yaml for a YAML
+               `sections:` block ready to be a chart values file)
     imports    {to, id} import identities for the managed set
     renames    proposed stable names for anonymous sections. A PROPOSAL by
                default; --apply performs them, which is the ONE mutating path
@@ -30,6 +31,7 @@ OPTIONS:
     --apply                `renames` only: actually perform them. Renaming
                            does not reload netifd or fw4, so the running
                            network is untouched.
+    --yaml                 `values` only: emit YAML instead of JSON.
     --include-positional   also emit sections addressed as @type[N]. OFF by
                            default: a positional address committed to git keeps
                            resolving after a section is inserted or deleted —
@@ -48,6 +50,7 @@ fn main() -> ExitCode {
     let mut authority = "127.0.0.1:9797".to_owned();
     let mut scope = emit::Scope::StableOnly;
     let mut do_apply = false;
+    let mut as_yaml = false;
     let mut i = 1;
     while i < args.len() {
         if args[i] == "--adapter" {
@@ -59,6 +62,9 @@ fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             }
             i += 2;
+        } else if args[i] == "--yaml" {
+            as_yaml = true;
+            i += 1;
         } else if args[i] == "--apply" {
             do_apply = true;
             i += 1;
@@ -101,6 +107,10 @@ fn main() -> ExitCode {
         }
     };
 
+    if cmd == "values" && as_yaml {
+        print!("{}", emit::helm_values_yaml(&inv, scope));
+        return ExitCode::SUCCESS;
+    }
     let out = match cmd.as_str() {
         "survey" => emit::report(&inv),
         "values" => emit::helm_values_scoped(&inv, scope),
