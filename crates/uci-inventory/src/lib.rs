@@ -45,4 +45,5 @@ pub mod disposition;
 pub mod emit;
 pub mod inventory;
 pub mod rename;
+pub mod readiness;
 pub mod rendered;

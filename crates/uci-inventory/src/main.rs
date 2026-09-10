@@ -21,6 +21,8 @@ SUBCOMMANDS:
     values     Helm values for the managed set (JSON; --yaml for a YAML
                `sections:` block ready to be a chart values file)
     imports    {to, id} import identities for the managed set
+    ready      is this router fit to ship? typed checks over the UCI surface,
+               each naming the incident that motivated it. Exit 1 if not.
     cr <file>  read back a RENDERED InfrastructureTemplate: --tf emits the
                Terraform body for an executor, otherwise a resource summary.
                Needs no device — it reads what the chart produced.
@@ -98,6 +100,10 @@ fn main() -> ExitCode {
         print!("{}", emit::helm_values_yaml(&inv, scope));
         return ExitCode::SUCCESS;
     }
+    if cmd == "ready" {
+        return run_ready(&adapter, &inv);
+    }
+
     let out = match cmd.as_str() {
         "survey" => emit::report(&inv),
         "values" => emit::helm_values_scoped(&inv, scope),
@@ -239,4 +245,53 @@ fn parse_flags(args: &[String]) -> Result<Opts, ExitCode> {
         }
     }
     Ok(o)
+}
+
+/// `ready` — judge whether a router is fit to ship.
+///
+/// Separate from `main` so the entry point stays a dispatcher; the pedantic
+/// line limit has been a fair nudge twice now.
+fn run_ready(adapter: &Adapter, inv: &uci_inventory::inventory::Inventory) -> ExitCode {
+        // uci.changes is a live query, not part of the inventory.
+        let uncommitted = adapter
+            .post("/uci/changes", &Json::obj([("config", Json::str("system"))]))
+            .ok()
+            .and_then(|j| match j {
+                Json::Obj(p) => p.iter().find(|(k, _)| k == "changes").map(|(_, v)| v.clone()),
+                _ => None,
+            })
+            .and_then(|c| match c {
+                Json::Arr(a) => Some(a.len()),
+                _ => None,
+            });
+        let checks = uci_inventory::readiness::judge(inv, uncommitted);
+        let rows: Vec<Json> = checks
+            .iter()
+            .map(|c| {
+                let (v, detail) = match &c.verdict {
+                    uci_inventory::readiness::Verdict::Pass => ("pass", String::new()),
+                    uci_inventory::readiness::Verdict::Fail(m) => ("FAIL", m.clone()),
+                    uci_inventory::readiness::Verdict::Unobservable(m) => {
+                        ("unobservable", (*m).to_owned())
+                    }
+                };
+                Json::obj([
+                    ("check", Json::str(c.name)),
+                    ("verdict", Json::str(v)),
+                    ("detail", Json::str(detail)),
+                    ("because", Json::str(c.because)),
+                ])
+            })
+            .collect();
+        let fit = uci_inventory::readiness::ready(&checks);
+        print!(
+            "{}",
+            Json::obj([
+                ("fitToShip", Json::Bool(fit)),
+                ("checks", Json::Arr(rows)),
+            ])
+            .render()
+        );
+        if fit { ExitCode::SUCCESS } else { ExitCode::FAILURE }
+    
 }
