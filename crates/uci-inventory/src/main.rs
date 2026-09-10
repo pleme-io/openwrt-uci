@@ -103,6 +103,12 @@ fn main() -> ExitCode {
     if cmd == "ready" {
         return run_ready(&adapter, &inv);
     }
+    // Regenerates tests/fixtures/. Uses the crate's own catalog, so there is
+    // exactly one definition of what is secret. See `capture`'s module docs.
+    if cmd == "capture" {
+        println!("{}", uci_inventory::capture::fixture(&bodies).render());
+        return ExitCode::SUCCESS;
+    }
 
     let out = match cmd.as_str() {
         "survey" => emit::report(&inv),

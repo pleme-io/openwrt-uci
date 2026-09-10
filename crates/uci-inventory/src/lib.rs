@@ -41,6 +41,7 @@
 //! addresses. `uci rename` is the fix, and it mutates the device.
 
 pub mod adapter;
+pub mod capture;
 pub mod disposition;
 pub mod emit;
 pub mod inventory;

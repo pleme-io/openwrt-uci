@@ -1,0 +1,4238 @@
+{
+  "packages": [
+    [
+      "TRL",
+      {
+        "values": {
+          "TRL": {
+            ".anonymous": 0,
+            ".type": "TRLConfig",
+            ".name": "TRL",
+            ".index": 0,
+            "ipv6": "1",
+            "enable": "0",
+            "oem": "glinet",
+            "modelNum": "MT6000",
+            "status": "connecting"
+          }
+        }
+      }
+    ],
+    [
+      "adguardhome",
+      {
+        "values": {
+          "config": {
+            ".anonymous": 0,
+            ".type": "adguardhome",
+            ".name": "config",
+            ".index": 0,
+            "enabled": "0"
+          }
+        }
+      }
+    ],
+    [
+      "apnprofile",
+      {
+        "values": {
+          "visible": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "visible",
+            ".index": 0,
+            "apn": "VSBLINTERNET",
+            "protocol": "qcm",
+            "description": "VISIBLE",
+            "apn_use": "3",
+            "apns": "[\"VSBLIMS\",\"VSBLADMIN\",\"\",\"VSBLAPP\"]"
+          },
+          "verizon": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "verizon",
+            ".index": 1,
+            "apn": "VZWINTERNET",
+            "protocol": "qcm",
+            "description": "VERIZON",
+            "apn_use": "3",
+            "apns": "[\"ims\",\"vzwadmin\",\"\",\"vzwapp\"]"
+          },
+          "orange": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "orange",
+            ".index": 2,
+            "apn": "net",
+            "protocol": "qcm",
+            "description": "ORANGE",
+            "apn_use": "5"
+          },
+          "telstra": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "telstra",
+            ".index": 3,
+            "apn": "telstra.wap",
+            "protocol": "qcm",
+            "description": "TELSTRA",
+            "apn_use": "1",
+            "apns": "[\"\",\"ims\",\"sos\"]"
+          }
+        }
+      }
+    ],
+    [
+      "board_special",
+      {
+        "values": {
+          "hardware": {
+            ".anonymous": 0,
+            ".type": "service",
+            ".name": "hardware",
+            ".index": 0
+          },
+          "switch": {
+            ".anonymous": 0,
+            ".type": "switch",
+            ".name": "switch",
+            ".index": 1
+          },
+          "network": {
+            ".anonymous": 0,
+            ".type": "network",
+            ".name": "network",
+            ".index": 2,
+            "wan": "eth1",
+            "lan": "lan1 lan2 lan3 lan4 lan5"
+          }
+        }
+      }
+    ],
+    [
+      "custom_apn",
+      {
+        "values": {
+          "verizon": {
+            ".anonymous": 0,
+            ".type": "apn",
+            ".name": "verizon",
+            ".index": 0,
+            "apns": "[\"vzwinternet\", \"v5ga01internet\"]"
+          },
+          "verizon_4g": {
+            ".anonymous": 0,
+            ".type": "apn",
+            ".name": "verizon_4g",
+            ".index": 1,
+            "apns": "[\"vzwinternet\"]"
+          }
+        }
+      }
+    ],
+    [
+      "dhcp",
+      {
+        "values": {
+          "dnsmasq_0": {
+            ".anonymous": 0,
+            ".type": "dnsmasq",
+            ".name": "dnsmasq_0",
+            ".index": 0,
+            "domainneeded": "1",
+            "boguspriv": "1",
+            "filterwin2k": "0",
+            "localise_queries": "1",
+            "rebind_localhost": "1",
+            "local": "/lan/",
+            "expandhosts": "1",
+            "nonegcache": "0",
+            "authoritative": "1",
+            "readethers": "1",
+            "leasefile": "/tmp/dhcp.leases",
+            "resolvfile": "/tmp/resolv.conf.d/resolv.conf.auto",
+            "nonwildcard": "1",
+            "localservice": "1",
+            "ednspacket_max": "1232",
+            "confdir": "/tmp/dnsmasq.d",
+            "rebind_protection": "0",
+            "filter_aaaa": "1",
+            "domain": "tail41c897.ts.net lan"
+          },
+          "lan": {
+            ".anonymous": 0,
+            ".type": "dhcp",
+            ".name": "lan",
+            ".index": 1,
+            "interface": "lan",
+            "start": "100",
+            "limit": "150",
+            "leasetime": "12h",
+            "ra_slaac": "1",
+            "dhcpv6": "disabled",
+            "ra": "disabled",
+            "ignore": "1",
+            "dhcpv4": "disabled"
+          },
+          "wan": {
+            ".anonymous": 0,
+            ".type": "dhcp",
+            ".name": "wan",
+            ".index": 2,
+            "interface": "wan",
+            "ignore": "1"
+          },
+          "guest": {
+            ".anonymous": 0,
+            ".type": "dhcp",
+            ".name": "guest",
+            ".index": 3,
+            "interface": "guest",
+            "start": "100",
+            "limit": "150",
+            "leasetime": "12h",
+            "dhcpv6": "disabled",
+            "ra": "disabled"
+          },
+          "odhcpd": {
+            ".anonymous": 0,
+            ".type": "odhcpd",
+            ".name": "odhcpd",
+            ".index": 4,
+            "maindhcp": "0",
+            "leasefile": "/tmp/hosts/odhcpd",
+            "leasetrigger": "/usr/sbin/odhcpd-update",
+            "loglevel": "4"
+          },
+          "domain_console_gl_inet_com": {
+            ".anonymous": 0,
+            ".type": "domain",
+            ".name": "domain_console_gl_inet_com",
+            ".index": 5,
+            "name": "console.gl-inet.com",
+            "ip": "192.168.8.1"
+          },
+          "domain_console_gl_inet_com_ffff_192_168_8_1": {
+            ".anonymous": 0,
+            ".type": "domain",
+            ".name": "domain_console_gl_inet_com_ffff_192_168_8_1",
+            ".index": 6,
+            "name": "console.gl-inet.com",
+            "ip": "::ffff:192.168.8.1"
+          },
+          "secondwan": {
+            ".anonymous": 0,
+            ".type": "dhcp",
+            ".name": "secondwan",
+            ".index": 7,
+            "interface": "secondwan",
+            "ignore": "1"
+          }
+        }
+      }
+    ],
+    [
+      "dropbear",
+      {
+        "values": {
+          "main": {
+            ".anonymous": 0,
+            ".type": "dropbear",
+            ".name": "main",
+            ".index": 0,
+            "PasswordAuth": "on",
+            "RootPasswordAuth": "on",
+            "Port": "22",
+            "enable": "1"
+          }
+        }
+      }
+    ],
+    [
+      "edgerouter",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "enabled": "0",
+            "force_dns": "1"
+          },
+          "wandhcp": {
+            ".anonymous": 0,
+            ".type": "dhcp",
+            ".name": "wandhcp",
+            ".index": 1,
+            "leasetime": "43200",
+            "ignore": "1"
+          }
+        }
+      }
+    ],
+    [
+      "firewall",
+      {
+        "values": {
+          "defaults_0": {
+            ".anonymous": 0,
+            ".type": "defaults",
+            ".name": "defaults_0",
+            ".index": 0,
+            "syn_flood": "1",
+            "input": "ACCEPT",
+            "output": "ACCEPT",
+            "forward": "REJECT"
+          },
+          "wan_drop_leaked_adgdns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "wan_drop_leaked_adgdns",
+            ".index": 1,
+            "name": "wan_drop_leaked_adgdns",
+            "src": "wan",
+            "proto": "udp",
+            "dest_port": "3053",
+            "mark": "0x0/0xf000",
+            "target": "DROP",
+            "enabled": "0"
+          },
+          "wan_drop_leaked_dns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "wan_drop_leaked_dns",
+            ".index": 2,
+            "name": "wan_drop_leaked_dns",
+            "src": "wan",
+            "proto": "udp",
+            "dest_port": "53",
+            "mark": "!0x8000/0xf000",
+            "target": "DROP",
+            "enabled": "0"
+          },
+          "guest_drop_leaked_dns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "guest_drop_leaked_dns",
+            ".index": 3,
+            "name": "guest_drop_leaked_dns",
+            "src": "guest",
+            "proto": "udp",
+            "dest_port": "53",
+            "mark": "!0x8000/0xf000",
+            "target": "DROP",
+            "enabled": "0"
+          },
+          "guest_drop_leak_adgdns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "guest_drop_leak_adgdns",
+            ".index": 4,
+            "name": "guest_drop_leak_adgdns",
+            "src": "guest",
+            "proto": "udp",
+            "dest_port": "3053",
+            "mark": "0x0/0xf000",
+            "target": "DROP",
+            "enabled": "0"
+          },
+          "zone_lan": {
+            ".anonymous": 0,
+            ".type": "zone",
+            ".name": "zone_lan",
+            ".index": 5,
+            "name": "lan",
+            "network": [
+              "lan"
+            ],
+            "input": "ACCEPT",
+            "output": "ACCEPT",
+            "forward": "ACCEPT"
+          },
+          "zone_wan": {
+            ".anonymous": 0,
+            ".type": "zone",
+            ".name": "zone_wan",
+            ".index": 6,
+            "name": "wan",
+            "network": [
+              "wan",
+              "wan6",
+              "wwan",
+              "secondwan"
+            ],
+            "output": "ACCEPT",
+            "forward": "REJECT",
+            "masq": "1",
+            "mtu_fix": "1",
+            "input": "DROP"
+          },
+          "forwarding_lan": {
+            ".anonymous": 0,
+            ".type": "forwarding",
+            ".name": "forwarding_lan",
+            ".index": 7,
+            "src": "lan",
+            "dest": "wan",
+            "enabled": "1"
+          },
+          "rule_allow_dhcp_renew": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_dhcp_renew",
+            ".index": 8,
+            "name": "Allow-DHCP-Renew",
+            "src": "wan",
+            "proto": "udp",
+            "dest_port": "68",
+            "target": "ACCEPT",
+            "family": "ipv4"
+          },
+          "rule_allow_igmp": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_igmp",
+            ".index": 9,
+            "name": "Allow-IGMP",
+            "src": "wan",
+            "proto": "igmp",
+            "family": "ipv4",
+            "target": "ACCEPT"
+          },
+          "rule_allow_dhcpv6": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_dhcpv6",
+            ".index": 10,
+            "name": "Allow-DHCPv6",
+            "src": "wan",
+            "proto": "udp",
+            "dest_port": "546",
+            "family": "ipv6",
+            "target": "ACCEPT"
+          },
+          "rule_allow_mld": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_mld",
+            ".index": 11,
+            "name": "Allow-MLD",
+            "src": "wan",
+            "proto": "icmp",
+            "src_ip": "fe80::/10",
+            "icmp_type": [
+              "130/0",
+              "131/0",
+              "132/0",
+              "143/0"
+            ],
+            "family": "ipv6",
+            "target": "ACCEPT"
+          },
+          "rule_allow_icmpv6_input": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_icmpv6_input",
+            ".index": 12,
+            "name": "Allow-ICMPv6-Input",
+            "src": "wan",
+            "proto": "icmp",
+            "limit": "1000/sec",
+            "family": "ipv6",
+            "target": "ACCEPT",
+            "icmp_type": [
+              "destination-unreachable",
+              "packet-too-big",
+              "time-exceeded",
+              "bad-header",
+              "unknown-header-type",
+              "router-solicitation",
+              "neighbour-solicitation",
+              "router-advertisement",
+              "neighbour-advertisement"
+            ]
+          },
+          "rule_allow_icmpv6_forward": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_icmpv6_forward",
+            ".index": 13,
+            "name": "Allow-ICMPv6-Forward",
+            "src": "wan",
+            "dest": "*",
+            "proto": "icmp",
+            "icmp_type": [
+              "echo-request",
+              "echo-reply",
+              "destination-unreachable",
+              "packet-too-big",
+              "time-exceeded",
+              "bad-header",
+              "unknown-header-type"
+            ],
+            "limit": "1000/sec",
+            "family": "ipv6",
+            "target": "ACCEPT"
+          },
+          "rule_allow_ipsec_esp": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_ipsec_esp",
+            ".index": 14,
+            "name": "Allow-IPSec-ESP",
+            "src": "wan",
+            "dest": "lan",
+            "proto": "esp",
+            "target": "ACCEPT"
+          },
+          "rule_allow_isakmp": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_isakmp",
+            ".index": 15,
+            "name": "Allow-ISAKMP",
+            "src": "wan",
+            "dest": "lan",
+            "dest_port": "500",
+            "proto": "udp",
+            "target": "ACCEPT"
+          },
+          "rule_support_udp_traceroute": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_support_udp_traceroute",
+            ".index": 16,
+            "name": "Support-UDP-Traceroute",
+            "src": "wan",
+            "dest_port": "33434:33689",
+            "proto": "udp",
+            "family": "ipv4",
+            "target": "REJECT",
+            "enabled": "false"
+          },
+          "include_etc_firewall_user": {
+            ".anonymous": 0,
+            ".type": "include",
+            ".name": "include_etc_firewall_user",
+            ".index": 17,
+            "path": "/etc/firewall.user"
+          },
+          "zone_guest": {
+            ".anonymous": 0,
+            ".type": "zone",
+            ".name": "zone_guest",
+            ".index": 18,
+            "name": "guest",
+            "network": "guest",
+            "forward": "REJECT",
+            "output": "ACCEPT",
+            "input": "REJECT"
+          },
+          "forwarding_guest": {
+            ".anonymous": 0,
+            ".type": "forwarding",
+            ".name": "forwarding_guest",
+            ".index": 19,
+            "src": "guest",
+            "dest": "wan",
+            "enabled": "1"
+          },
+          "rule_allow_dhcp": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_dhcp",
+            ".index": 20,
+            "name": "Allow-DHCP",
+            "src": "guest",
+            "target": "ACCEPT",
+            "proto": "udp",
+            "dest_port": "67-68"
+          },
+          "rule_allow_dns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "rule_allow_dns",
+            ".index": 21,
+            "name": "Allow-DNS",
+            "src": "guest",
+            "target": "ACCEPT",
+            "proto": "tcp udp",
+            "dest_port": "53"
+          },
+          "nat6": {
+            ".anonymous": 0,
+            ".type": "include",
+            ".name": "nat6",
+            ".index": 22,
+            "path": "/etc/firewall.nat6",
+            "reload": "1"
+          },
+          "dns_order": {
+            ".anonymous": 0,
+            ".type": "include",
+            ".name": "dns_order",
+            ".index": 23,
+            "type": "script",
+            "path": "/etc/firewall.dns_order",
+            "reload": "1",
+            "enabled": "1"
+          },
+          "vpnclient": {
+            ".anonymous": 0,
+            ".type": "include",
+            ".name": "vpnclient",
+            ".index": 24,
+            "type": "script",
+            "path": "/usr/bin/rtp2.sh",
+            "reload": "0"
+          },
+          "glblock": {
+            ".anonymous": 0,
+            ".type": "include",
+            ".name": "glblock",
+            ".index": 25,
+            "type": "script",
+            "path": "/usr/bin/gl_block.sh",
+            "reload": "1"
+          },
+          "dmz_exclude": {
+            ".anonymous": 0,
+            ".type": "include",
+            ".name": "dmz_exclude",
+            ".index": 26,
+            "type": "script",
+            "path": "/etc/firewall.dmz.exclude",
+            "reload": "1"
+          },
+          "security": {
+            ".anonymous": 0,
+            ".type": "include",
+            ".name": "security",
+            ".index": 27,
+            "type": "script",
+            "path": "/etc/firewall.security",
+            "reload": "0"
+          },
+          "lan_drop_leaked_dns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "lan_drop_leaked_dns",
+            ".index": 28,
+            "name": "lan_drop_leaked_dns",
+            "src": "lan",
+            "proto": "udp",
+            "dest_port": "53",
+            "mark": "!0x8000/0xf000",
+            "target": "DROP",
+            "enabled": "1"
+          },
+          "lan_drop_leak_adgdns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "lan_drop_leak_adgdns",
+            ".index": 29,
+            "name": "lan_drop_leak_adgdns",
+            "src": "lan",
+            "proto": "udp",
+            "dest_port": "3053",
+            "mark": "0x0/0xf000",
+            "target": "DROP",
+            "enabled": "1"
+          },
+          "wgserver_drop_leaked_dns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "wgserver_drop_leaked_dns",
+            ".index": 30,
+            "name": "wgserver_drop_leaked_dns",
+            "src": "wgserver",
+            "proto": "udp",
+            "dest_port": "53",
+            "mark": "!0x8000/0xf000",
+            "target": "DROP",
+            "enabled": "1"
+          },
+          "ovpnserver_drop_leaked_dns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "ovpnserver_drop_leaked_dns",
+            ".index": 31,
+            "name": "ovpnserver_drop_leaked_dns",
+            "src": "ovpnserver",
+            "proto": "udp",
+            "dest_port": "53",
+            "mark": "!0x8000/0xf000",
+            "target": "DROP",
+            "enabled": "1"
+          },
+          "wgserver_drop_leaked_adgdns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "wgserver_drop_leaked_adgdns",
+            ".index": 32,
+            "name": "wgserver_drop_leaked_adgdns",
+            "src": "wgserver",
+            "proto": "udp",
+            "dest_port": "3053",
+            "mark": "0x0/0xf000",
+            "target": "DROP",
+            "enabled": "1"
+          },
+          "ovpnserver_drop_leaked_adgdns": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "ovpnserver_drop_leaked_adgdns",
+            ".index": 33,
+            "name": "ovpnserver_drop_leaked_adgdns",
+            "src": "ovpnserver",
+            "proto": "udp",
+            "dest_port": "3053",
+            "mark": "0x0/0xf000",
+            "target": "DROP",
+            "enabled": "1"
+          },
+          "tailscale0": {
+            ".anonymous": 0,
+            ".type": "zone",
+            ".name": "tailscale0",
+            ".index": 34,
+            "name": "tailscale0",
+            "input": "ACCEPT",
+            "mtu_fix": "1",
+            "device": [
+              "tailscale0"
+            ]
+          },
+          "portal_ttl": {
+            ".anonymous": 0,
+            ".type": "include",
+            ".name": "portal_ttl",
+            ".index": 35,
+            "path": "/etc/firewall-portal.user",
+            "reload": "1"
+          }
+        }
+      }
+    ],
+    [
+      "fstab",
+      {
+        "values": {
+          "cfg013fd6": {
+            ".anonymous": 1,
+            ".type": "global",
+            ".name": "cfg013fd6",
+            ".index": 0,
+            "anon_swap": "0",
+            "anon_mount": "1",
+            "auto_swap": "1",
+            "auto_mount": "1",
+            "delay_root": "5",
+            "check_fs": "0"
+          }
+        }
+      }
+    ],
+    [
+      "fullconenat",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "enable": "0"
+          }
+        }
+      }
+    ],
+    [
+      "gl-black_white_list",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "enable": "1",
+            "mode": "black"
+          },
+          "black": {
+            ".anonymous": 0,
+            ".type": "list",
+            ".name": "black",
+            ".index": 1
+          },
+          "white": {
+            ".anonymous": 0,
+            ".type": "list",
+            ".name": "white",
+            ".index": 2
+          },
+          "lan": {
+            ".anonymous": 0,
+            ".type": "secure_option",
+            ".name": "lan",
+            ".index": 3,
+            "ap_isolate": "0"
+          },
+          "guest": {
+            ".anonymous": 0,
+            ".type": "secure_option",
+            ".name": "guest",
+            ".index": 4,
+            "ap_isolate": "1",
+            "wan_isolate": "0",
+            "transfer_enable": "0"
+          }
+        }
+      }
+    ],
+    [
+      "gl-cloud",
+      {
+        "values": {
+          "cfg019a9c": {
+            ".anonymous": 1,
+            ".type": "cloud",
+            ".name": "cfg019a9c",
+            ".index": 0,
+            "log": "SECRET-1"
+          }
+        }
+      }
+    ],
+    [
+      "gl-dns",
+      {
+        "values": {
+          "cfg016aea": {
+            ".anonymous": 1,
+            ".type": "dns",
+            ".name": "cfg016aea",
+            ".index": 0,
+            "mode": "auto",
+            "dot_provider": "D",
+            "override_vpn": "1"
+          }
+        }
+      }
+    ],
+    [
+      "gl-tertf",
+      {
+        "values": {
+          "cfg01712a": {
+            ".anonymous": 1,
+            ".type": "tertf",
+            ".name": "cfg01712a",
+            ".index": 0,
+            "local_network": [
+              "br-lan",
+              "br-guest"
+            ]
+          }
+        }
+      }
+    ],
+    [
+      "gl_block",
+      {
+        "values": {}
+      }
+    ],
+    [
+      "gl_ddns",
+      {
+        "values": {
+          "ddns": {
+            ".anonymous": 0,
+            ".type": "service",
+            ".name": "ddns",
+            ".index": 0,
+            "enabled_ssh": "0",
+            "http_port": "80",
+            "https_port": "443"
+          }
+        }
+      }
+    ],
+    [
+      "gl_led",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "led",
+            ".name": "global",
+            ".index": 0,
+            "led_enable": "1",
+            "led_daemon": "1"
+          }
+        }
+      }
+    ],
+    [
+      "gl_logread",
+      {
+        "values": {
+          "crash": {
+            ".anonymous": 0,
+            ".type": "globals",
+            ".name": "crash",
+            ".index": 0,
+            "record_size": "8192"
+          }
+        }
+      }
+    ],
+    [
+      "gl_s2s",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "firewall": "SECRET-2",
+            "enable": "SECRET-3"
+          }
+        }
+      }
+    ],
+    [
+      "gl_timer",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "2G_func": "turn_onoff",
+            "5G_func": "turn_onoff",
+            "6G_func": "turn_onoff",
+            "MLD_func": "turn_onoff",
+            "enable": "1"
+          },
+          "led": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "led",
+            ".index": 1,
+            "enable": "0",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "reboot": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "reboot",
+            ".index": 2,
+            "enable": "0",
+            "hour": "03",
+            "min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "6gwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "6gwifi",
+            ".index": 3,
+            "enable": "0",
+            "func": "turn_onoff",
+            "band": "6G",
+            "guest": "0",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "5gwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "5gwifi",
+            ".index": 4,
+            "enable": "0",
+            "func": "turn_onoff",
+            "band": "5G",
+            "guest": "0",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "2gwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "2gwifi",
+            ".index": 5,
+            "enable": "0",
+            "func": "turn_onoff",
+            "band": "2G",
+            "guest": "0",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "6gguestwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "6gguestwifi",
+            ".index": 6,
+            "enable": "0",
+            "func": "turn_onoff",
+            "band": "6G",
+            "guest": "1",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "5gguestwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "5gguestwifi",
+            ".index": 7,
+            "enable": "0",
+            "func": "turn_onoff",
+            "band": "5G",
+            "guest": "1",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "mldwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "mldwifi",
+            ".index": 8,
+            "enable": "0",
+            "func": "turn_onoff",
+            "band": "MLD",
+            "guest": "0",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "mldguestwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "mldguestwifi",
+            ".index": 9,
+            "enable": "0",
+            "func": "turn_onoff",
+            "band": "MLD",
+            "guest": "1",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "2gguestwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "2gguestwifi",
+            ".index": 10,
+            "enable": "0",
+            "func": "turn_onoff",
+            "band": "2G",
+            "guest": "1",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "6gtxpowerwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "6gtxpowerwifi",
+            ".index": 11,
+            "enable": "0",
+            "func": "power_switch",
+            "band": "6G",
+            "guest": "0",
+            "switch_hour": "22",
+            "switch_min": "00",
+            "switch_power": "Low",
+            "restore_hour": "07",
+            "restore_min": "00",
+            "restore_power": "Max",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "5gtxpowerwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "5gtxpowerwifi",
+            ".index": 12,
+            "enable": "0",
+            "func": "power_switch",
+            "band": "5G",
+            "guest": "0",
+            "switch_hour": "22",
+            "switch_min": "00",
+            "switch_power": "Low",
+            "restore_hour": "07",
+            "restore_min": "00",
+            "restore_power": "Max",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "2gtxpowerwifi": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "2gtxpowerwifi",
+            ".index": 13,
+            "enable": "0",
+            "func": "power_switch",
+            "band": "2G",
+            "guest": "0",
+            "switch_hour": "22",
+            "switch_min": "00",
+            "switch_power": "Low",
+            "restore_hour": "07",
+            "restore_min": "00",
+            "restore_power": "Max",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "disk": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "disk",
+            ".index": 14,
+            "enable": "0",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "langs": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "langs",
+            ".index": 15,
+            "enable": "0",
+            "hour": "00",
+            "min": "00",
+            "week": "0 1 2 3 4 5 6"
+          },
+          "screen": {
+            ".anonymous": 0,
+            ".type": "timer",
+            ".name": "screen",
+            ".index": 16,
+            "enable": "0",
+            "turnon_hour": "07",
+            "turnon_min": "00",
+            "turnoff_hour": "22",
+            "turnoff_min": "00",
+            "week": "0 1 2 3 4 5 6"
+          }
+        }
+      }
+    ],
+    [
+      "glconfig",
+      {
+        "values": {
+          "general": {
+            ".anonymous": 0,
+            ".type": "service",
+            ".name": "general",
+            ".index": 0,
+            "mode": "router",
+            "inited_internet": "SECRET-3",
+            "track_ipv6": [
+              "2001:4860:4860::8844",
+              "2001:4860:4860::8888",
+              "2620:0:ccd::2",
+              "2620:0:ccc::2"
+            ],
+            "track_ip": [
+              "1.1.1.1",
+              "8.8.8.8",
+              "208.67.222.222",
+              "208.67.220.220"
+            ],
+            "inited": "SECRET-2"
+          }
+        }
+      }
+    ],
+    [
+      "glforward",
+      {
+        "values": {
+          "phone": {
+            ".anonymous": 0,
+            ".type": "service",
+            ".name": "phone",
+            ".index": 0,
+            "enable": "0"
+          },
+          "email": {
+            ".anonymous": 0,
+            ".type": "service",
+            ".name": "email",
+            ".index": 1,
+            "enable": "0"
+          }
+        }
+      }
+    ],
+    [
+      "glipv6",
+      {
+        "values": {
+          "globals": {
+            ".anonymous": 0,
+            ".type": "globals",
+            ".name": "globals",
+            ".index": 0,
+            "enabled": "0",
+            "origin_ula_prefix": "fd2e:1c99:9d83::/48"
+          },
+          "wan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "wan",
+            ".index": 1,
+            "interface": "wan",
+            "addrmode": "auto",
+            "dnsmode": "auto"
+          },
+          "secondwan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "secondwan",
+            ".index": 2,
+            "interface": "secondwan",
+            "addrmode": "auto",
+            "dnsmode": "auto"
+          },
+          "lan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "lan",
+            ".index": 3,
+            "mode": "nat6",
+            "dnsmode": "auto",
+            "lan_ip6addr": "fd2e:1c99:9d83::1/64"
+          }
+        }
+      }
+    ],
+    [
+      "glmodem",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "log_level": "1"
+          },
+          "sim": {
+            ".anonymous": 0,
+            ".type": "switch",
+            ".name": "sim",
+            ".index": 1,
+            "sim_num": "1"
+          }
+        }
+      }
+    ],
+    [
+      "kmwan",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "enable": "1",
+            "level": "medium",
+            "sensitivity": "3000",
+            "mode": "failover",
+            "inited": "1"
+          },
+          "wan": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "wan",
+            ".index": 1,
+            "interface": "wan",
+            "metric": "10",
+            "weight": "1",
+            "track_mode": "force",
+            "addr_type": "4",
+            "disabled": "0",
+            "check": "1",
+            "tracks": [
+              "ping,1.1.1.1",
+              "ping,8.8.8.8",
+              "ping,208.67.222.222",
+              "ping,208.67.220.220"
+            ]
+          },
+          "wwan": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "wwan",
+            ".index": 2,
+            "interface": "wwan",
+            "metric": "20",
+            "weight": "1",
+            "track_mode": "force",
+            "addr_type": "4",
+            "disabled": "0",
+            "check": "1",
+            "tracks": [
+              "ping,1.1.1.1",
+              "ping,8.8.8.8",
+              "ping,208.67.222.222",
+              "ping,208.67.220.220"
+            ]
+          },
+          "tethering": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "tethering",
+            ".index": 3,
+            "interface": "tethering",
+            "metric": "30",
+            "weight": "1",
+            "track_mode": "force",
+            "addr_type": "4",
+            "disabled": "0",
+            "check": "1",
+            "tracks": [
+              "ping,1.1.1.1",
+              "ping,8.8.8.8",
+              "ping,208.67.222.222",
+              "ping,208.67.220.220"
+            ]
+          },
+          "wan6": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "wan6",
+            ".index": 4,
+            "interface": "wan6",
+            "metric": "10",
+            "weight": "1",
+            "track_mode": "force",
+            "addr_type": "6",
+            "disabled": "1",
+            "tracks": [
+              "ping,2001:4860:4860::8844",
+              "ping,2001:4860:4860::8888",
+              "ping,2620:0:ccd::2",
+              "ping,2620:0:ccc::2"
+            ]
+          },
+          "wwan6": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "wwan6",
+            ".index": 5,
+            "interface": "wwan6",
+            "metric": "20",
+            "weight": "1",
+            "track_mode": "force",
+            "addr_type": "6",
+            "disabled": "1",
+            "tracks": [
+              "ping,2001:4860:4860::8844",
+              "ping,2001:4860:4860::8888",
+              "ping,2620:0:ccd::2",
+              "ping,2620:0:ccc::2"
+            ]
+          },
+          "tethering6": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "tethering6",
+            ".index": 6,
+            "interface": "tethering6",
+            "metric": "30",
+            "weight": "1",
+            "track_mode": "force",
+            "addr_type": "6",
+            "disabled": "1",
+            "tracks": [
+              "ping,2001:4860:4860::8844",
+              "ping,2001:4860:4860::8888",
+              "ping,2620:0:ccd::2",
+              "ping,2620:0:ccc::2"
+            ]
+          },
+          "modem_1_1_2": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "modem_1_1_2",
+            ".index": 7,
+            "disabled": "0",
+            "addr_type": "4",
+            "metric": "40",
+            "track_mode": "passive",
+            "weight": "1",
+            "interface": "modem_1_1_2",
+            "tracks": [
+              "ping,1.1.1.1",
+              "ping,8.8.8.8",
+              "ping,208.67.222.222",
+              "ping,208.67.220.220"
+            ]
+          },
+          "modem_1_1_2_6": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "modem_1_1_2_6",
+            ".index": 8,
+            "disabled": "1",
+            "addr_type": "6",
+            "metric": "40",
+            "track_mode": "passive",
+            "weight": "1",
+            "interface": "modem_1_1_2_6",
+            "tracks": [
+              "ping,2001:4860:4860::8844",
+              "ping,2001:4860:4860::8888",
+              "ping,2620:0:ccd::2",
+              "ping,2620:0:ccc::2"
+            ]
+          },
+          "secondwan": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "secondwan",
+            ".index": 9,
+            "interface": "secondwan",
+            "addr_type": "4",
+            "track_mode": "force",
+            "metric": "15",
+            "weight": "1",
+            "disabled": "0",
+            "check": "1",
+            "tracks": [
+              "ping,1.1.1.1",
+              "ping,8.8.8.8",
+              "ping,208.67.222.222",
+              "ping,208.67.220.220"
+            ]
+          },
+          "secondwan6": {
+            ".anonymous": 0,
+            ".type": "member",
+            ".name": "secondwan6",
+            ".index": 10,
+            "interface": "secondwan6",
+            "addr_type": "6",
+            "track_mode": "force",
+            "metric": "15",
+            "weight": "1",
+            "disabled": "1",
+            "tracks": [
+              "ping,2001:4860:4860::8844",
+              "ping,2001:4860:4860::8888",
+              "ping,2620:0:ccd::2",
+              "ping,2620:0:ccc::2"
+            ]
+          }
+        }
+      }
+    ],
+    [
+      "minidlna",
+      {
+        "values": {
+          "config": {
+            ".anonymous": 0,
+            ".type": "minidlna",
+            ".name": "config",
+            ".index": 0,
+            "enabled": "0",
+            "user": "minidlna",
+            "port": "8200",
+            "interface": "br-lan",
+            "friendly_name": "OpenWrt DLNA Server",
+            "db_dir": "/var/run/minidlna",
+            "inotify": "1",
+            "enable_tivo": "0",
+            "wide_links": "0",
+            "strict_dlna": "0",
+            "notify_interval": "900",
+            "serial": "12345678",
+            "model_number": "1",
+            "root_container": ".",
+            "media_dir": [
+              "/mnt"
+            ],
+            "album_art_names": "Cover.jpg/cover.jpg/AlbumArtSmall.jpg/albumartsmall.jpg/AlbumArt.jpg/albumart.jpg/Album.jpg/album.jpg/Folder.jpg/folder.jpg/Thumb.jpg/thumb.jpg"
+          }
+        }
+      }
+    ],
+    [
+      "mptun",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "mptun",
+            ".name": "global",
+            ".index": 0,
+            "enable": "SECRET-3",
+            "enable_mpifd": "SECRET-2",
+            "mptun": "SECRET-4",
+            "tcpmark": "SECRET-5",
+            "udpmark": "SECRET-6",
+            "lanmark": "SECRET-7",
+            "dnsmark": "SECRET-8",
+            "mode": "0",
+            "node": "SECRET-9"
+          },
+          "config": {
+            ".anonymous": 0,
+            ".type": "mptun",
+            ".name": "config",
+            ".index": 1,
+            "profile": "SECRET-10",
+            "sys_resolvfile": "SECRET-11"
+          },
+          "wan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "wan",
+            ".index": 2,
+            "enable": "SECRET-2",
+            "metric": "SECRET-2",
+            "mptcp_flags": [
+              "subflow"
+            ],
+            "device": "eth1"
+          },
+          "secondwan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "secondwan",
+            ".index": 3,
+            "enable": "SECRET-2",
+            "metric": "SECRET-12",
+            "device": "eth1",
+            "mptcp_flags": [
+              "subflow"
+            ]
+          },
+          "wwan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "wwan",
+            ".index": 4,
+            "enable": "SECRET-2",
+            "metric": "SECRET-13",
+            "device": "wlan-sta0",
+            "mptcp_flags": [
+              "subflow"
+            ]
+          },
+          "tethering": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "tethering",
+            ".index": 5,
+            "enable": "SECRET-2",
+            "metric": "SECRET-14",
+            "device": "usb0",
+            "mptcp_flags": [
+              "subflow"
+            ]
+          },
+          "modem_0000_4": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "modem_0000_4",
+            ".index": 6,
+            "enable": "SECRET-2",
+            "device": "rmnet_mhi0",
+            "metric": "SECRET-15",
+            "mptcp_flags": [
+              "subflow"
+            ]
+          }
+        }
+      }
+    ],
+    [
+      "mtkhnat",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "enable": "1",
+            "hqos": "0",
+            "txq_num": "16",
+            "scheduling": "wrr",
+            "sch0_bw": "1000000",
+            "sch1_bw": "1000000",
+            "actype": "1"
+          },
+          "cfg02b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg02b68a",
+            ".index": 1,
+            "id": "0",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg03b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg03b68a",
+            ".index": 2,
+            "id": "1",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg04b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg04b68a",
+            ".index": 3,
+            "id": "2",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg05b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg05b68a",
+            ".index": 4,
+            "id": "3",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg06b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg06b68a",
+            ".index": 5,
+            "id": "4",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg07b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg07b68a",
+            ".index": 6,
+            "id": "5",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg08b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg08b68a",
+            ".index": 7,
+            "id": "6",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg09b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg09b68a",
+            ".index": 8,
+            "id": "7",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg0ab68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg0ab68a",
+            ".index": 9,
+            "id": "8",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg0bb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg0bb68a",
+            ".index": 10,
+            "id": "9",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg0cb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg0cb68a",
+            ".index": 11,
+            "id": "10",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg0db68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg0db68a",
+            ".index": 12,
+            "id": "11",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg0eb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg0eb68a",
+            ".index": 13,
+            "id": "12",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg0fb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg0fb68a",
+            ".index": 14,
+            "id": "13",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg10b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg10b68a",
+            ".index": 15,
+            "id": "14",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg11b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg11b68a",
+            ".index": 16,
+            "id": "15",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg12b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg12b68a",
+            ".index": 17,
+            "id": "16",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg13b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg13b68a",
+            ".index": 18,
+            "id": "17",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg14b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg14b68a",
+            ".index": 19,
+            "id": "18",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg15b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg15b68a",
+            ".index": 20,
+            "id": "19",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg16b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg16b68a",
+            ".index": 21,
+            "id": "20",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg17b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg17b68a",
+            ".index": 22,
+            "id": "21",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg18b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg18b68a",
+            ".index": 23,
+            "id": "22",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg19b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg19b68a",
+            ".index": 24,
+            "id": "23",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg1ab68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg1ab68a",
+            ".index": 25,
+            "id": "24",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg1bb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg1bb68a",
+            ".index": 26,
+            "id": "25",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg1cb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg1cb68a",
+            ".index": 27,
+            "id": "26",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg1db68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg1db68a",
+            ".index": 28,
+            "id": "27",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg1eb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg1eb68a",
+            ".index": 29,
+            "id": "28",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg1fb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg1fb68a",
+            ".index": 30,
+            "id": "29",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg20b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg20b68a",
+            ".index": 31,
+            "id": "30",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg21b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg21b68a",
+            ".index": 32,
+            "id": "31",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg22b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg22b68a",
+            ".index": 33,
+            "id": "32",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg23b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg23b68a",
+            ".index": 34,
+            "id": "33",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg24b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg24b68a",
+            ".index": 35,
+            "id": "34",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg25b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg25b68a",
+            ".index": 36,
+            "id": "35",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg26b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg26b68a",
+            ".index": 37,
+            "id": "36",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg27b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg27b68a",
+            ".index": 38,
+            "id": "37",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg28b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg28b68a",
+            ".index": 39,
+            "id": "38",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg29b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg29b68a",
+            ".index": 40,
+            "id": "39",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg2ab68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg2ab68a",
+            ".index": 41,
+            "id": "40",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg2bb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg2bb68a",
+            ".index": 42,
+            "id": "41",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg2cb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg2cb68a",
+            ".index": 43,
+            "id": "42",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg2db68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg2db68a",
+            ".index": 44,
+            "id": "43",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg2eb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg2eb68a",
+            ".index": 45,
+            "id": "44",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg2fb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg2fb68a",
+            ".index": 46,
+            "id": "45",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg30b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg30b68a",
+            ".index": 47,
+            "id": "46",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg31b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg31b68a",
+            ".index": 48,
+            "id": "47",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg32b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg32b68a",
+            ".index": 49,
+            "id": "48",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg33b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg33b68a",
+            ".index": 50,
+            "id": "49",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg34b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg34b68a",
+            ".index": 51,
+            "id": "50",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg35b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg35b68a",
+            ".index": 52,
+            "id": "51",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg36b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg36b68a",
+            ".index": 53,
+            "id": "52",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg37b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg37b68a",
+            ".index": 54,
+            "id": "53",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg38b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg38b68a",
+            ".index": 55,
+            "id": "54",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg39b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg39b68a",
+            ".index": 56,
+            "id": "55",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg3ab68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg3ab68a",
+            ".index": 57,
+            "id": "56",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg3bb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg3bb68a",
+            ".index": 58,
+            "id": "57",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg3cb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg3cb68a",
+            ".index": 59,
+            "id": "58",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "2",
+            "resv": "4"
+          },
+          "cfg3db68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg3db68a",
+            ".index": 60,
+            "id": "59",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "4",
+            "resv": "4"
+          },
+          "cfg3eb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg3eb68a",
+            ".index": 61,
+            "id": "60",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg3fb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg3fb68a",
+            ".index": 62,
+            "id": "61",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "6",
+            "resv": "4"
+          },
+          "cfg40b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg40b68a",
+            ".index": 63,
+            "id": "62",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg41b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg41b68a",
+            ".index": 64,
+            "id": "63",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg42b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg42b68a",
+            ".index": 65,
+            "id": "64",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg43b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg43b68a",
+            ".index": 66,
+            "id": "65",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg44b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg44b68a",
+            ".index": 67,
+            "id": "66",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg45b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg45b68a",
+            ".index": 68,
+            "id": "67",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg46b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg46b68a",
+            ".index": 69,
+            "id": "68",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg47b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg47b68a",
+            ".index": 70,
+            "id": "69",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg48b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg48b68a",
+            ".index": 71,
+            "id": "70",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg49b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg49b68a",
+            ".index": 72,
+            "id": "71",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg4ab68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg4ab68a",
+            ".index": 73,
+            "id": "72",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg4bb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg4bb68a",
+            ".index": 74,
+            "id": "73",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg4cb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg4cb68a",
+            ".index": 75,
+            "id": "74",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg4db68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg4db68a",
+            ".index": 76,
+            "id": "75",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg4eb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg4eb68a",
+            ".index": 77,
+            "id": "76",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg4fb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg4fb68a",
+            ".index": 78,
+            "id": "77",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg50b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg50b68a",
+            ".index": 79,
+            "id": "78",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg51b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg51b68a",
+            ".index": 80,
+            "id": "79",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg52b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg52b68a",
+            ".index": 81,
+            "id": "80",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg53b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg53b68a",
+            ".index": 82,
+            "id": "81",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg54b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg54b68a",
+            ".index": 83,
+            "id": "82",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg55b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg55b68a",
+            ".index": 84,
+            "id": "83",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg56b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg56b68a",
+            ".index": 85,
+            "id": "84",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg57b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg57b68a",
+            ".index": 86,
+            "id": "85",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg58b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg58b68a",
+            ".index": 87,
+            "id": "86",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg59b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg59b68a",
+            ".index": 88,
+            "id": "87",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg5ab68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg5ab68a",
+            ".index": 89,
+            "id": "88",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg5bb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg5bb68a",
+            ".index": 90,
+            "id": "89",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg5cb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg5cb68a",
+            ".index": 91,
+            "id": "90",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg5db68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg5db68a",
+            ".index": 92,
+            "id": "91",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg5eb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg5eb68a",
+            ".index": 93,
+            "id": "92",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg5fb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg5fb68a",
+            ".index": 94,
+            "id": "93",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg60b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg60b68a",
+            ".index": 95,
+            "id": "94",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg61b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg61b68a",
+            ".index": 96,
+            "id": "95",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg62b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg62b68a",
+            ".index": 97,
+            "id": "96",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg63b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg63b68a",
+            ".index": 98,
+            "id": "97",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg64b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg64b68a",
+            ".index": 99,
+            "id": "98",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg65b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg65b68a",
+            ".index": 100,
+            "id": "99",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg66b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg66b68a",
+            ".index": 101,
+            "id": "100",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg67b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg67b68a",
+            ".index": 102,
+            "id": "101",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg68b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg68b68a",
+            ".index": 103,
+            "id": "102",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg69b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg69b68a",
+            ".index": 104,
+            "id": "103",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg6ab68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg6ab68a",
+            ".index": 105,
+            "id": "104",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg6bb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg6bb68a",
+            ".index": 106,
+            "id": "105",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg6cb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg6cb68a",
+            ".index": 107,
+            "id": "106",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg6db68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg6db68a",
+            ".index": 108,
+            "id": "107",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg6eb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg6eb68a",
+            ".index": 109,
+            "id": "108",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg6fb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg6fb68a",
+            ".index": 110,
+            "id": "109",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg70b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg70b68a",
+            ".index": 111,
+            "id": "110",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg71b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg71b68a",
+            ".index": 112,
+            "id": "111",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg72b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg72b68a",
+            ".index": 113,
+            "id": "112",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg73b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg73b68a",
+            ".index": 114,
+            "id": "113",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg74b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg74b68a",
+            ".index": 115,
+            "id": "114",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg75b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg75b68a",
+            ".index": 116,
+            "id": "115",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg76b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg76b68a",
+            ".index": 117,
+            "id": "116",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg77b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg77b68a",
+            ".index": 118,
+            "id": "117",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg78b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg78b68a",
+            ".index": 119,
+            "id": "118",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg79b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg79b68a",
+            ".index": 120,
+            "id": "119",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg7ab68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg7ab68a",
+            ".index": 121,
+            "id": "120",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg7bb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg7bb68a",
+            ".index": 122,
+            "id": "121",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg7cb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg7cb68a",
+            ".index": 123,
+            "id": "122",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg7db68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg7db68a",
+            ".index": 124,
+            "id": "123",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg7eb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg7eb68a",
+            ".index": 125,
+            "id": "124",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg7fb68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg7fb68a",
+            ".index": 126,
+            "id": "125",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg80b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg80b68a",
+            ".index": 127,
+            "id": "126",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          },
+          "cfg81b68a": {
+            ".anonymous": 1,
+            ".type": "queue",
+            ".name": "cfg81b68a",
+            ".index": 128,
+            "id": "127",
+            "minrate": "30",
+            "maxrate": "100",
+            "weight": "8",
+            "resv": "4"
+          }
+        }
+      }
+    ],
+    [
+      "network",
+      {
+        "values": {
+          "loopback": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "loopback",
+            ".index": 0,
+            "device": "lo",
+            "proto": "static",
+            "ipaddr": "127.0.0.1",
+            "netmask": "255.0.0.0"
+          },
+          "globals": {
+            ".anonymous": 0,
+            ".type": "globals",
+            ".name": "globals",
+            ".index": 1,
+            "ula_prefix": "fd2e:1c99:9d83::/48"
+          },
+          "device_br_lan": {
+            ".anonymous": 0,
+            ".type": "device",
+            ".name": "device_br_lan",
+            ".index": 2,
+            "name": "br-lan",
+            "type": "bridge",
+            "ports": [
+              "lan1",
+              "lan2",
+              "lan3",
+              "lan4",
+              "lan5"
+            ],
+            "macaddr": "94:83:c4:d0:f7:95"
+          },
+          "device_lan1": {
+            ".anonymous": 0,
+            ".type": "device",
+            ".name": "device_lan1",
+            ".index": 3,
+            "name": "lan1",
+            "macaddr": "94:83:c4:d0:f7:95"
+          },
+          "device_lan2": {
+            ".anonymous": 0,
+            ".type": "device",
+            ".name": "device_lan2",
+            ".index": 4,
+            "name": "lan2",
+            "macaddr": "94:83:c4:d0:f7:95"
+          },
+          "device_lan3": {
+            ".anonymous": 0,
+            ".type": "device",
+            ".name": "device_lan3",
+            ".index": 5,
+            "name": "lan3",
+            "macaddr": "94:83:c4:d0:f7:95"
+          },
+          "device_lan4": {
+            ".anonymous": 0,
+            ".type": "device",
+            ".name": "device_lan4",
+            ".index": 6,
+            "name": "lan4",
+            "macaddr": "94:83:c4:d0:f7:95"
+          },
+          "device_lan5": {
+            ".anonymous": 0,
+            ".type": "device",
+            ".name": "device_lan5",
+            ".index": 7,
+            "name": "lan5",
+            "macaddr": "94:83:c4:d0:f7:95"
+          },
+          "lan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "lan",
+            ".index": 8,
+            "device": "br-lan",
+            "proto": "static",
+            "netmask": "255.255.255.0",
+            "ip6assign": "60",
+            "isolate": "0",
+            "ipaddr": "192.168.60.2",
+            "gateway": "192.168.60.1",
+            "dns": [
+              "192.168.60.1"
+            ]
+          },
+          "device_eth1": {
+            ".anonymous": 0,
+            ".type": "device",
+            ".name": "device_eth1",
+            ".index": 9,
+            "name": "eth1",
+            "macaddr": "94:83:c4:d0:f7:93"
+          },
+          "wan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "wan",
+            ".index": 10,
+            "device": "eth1",
+            "proto": "dhcp",
+            "force_link": "0",
+            "ipv6": "0",
+            "classlessroute": "0",
+            "metric": "10",
+            "disabled": "1"
+          },
+          "wan6": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "wan6",
+            ".index": 11,
+            "proto": "dhcpv6",
+            "device": "@wan",
+            "disabled": "1"
+          },
+          "guest": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "guest",
+            ".index": 12,
+            "force_link": "1",
+            "type": "bridge",
+            "proto": "static",
+            "ipaddr": "192.168.9.1",
+            "netmask": "255.255.255.0",
+            "ip6assign": "60",
+            "multicast_querier": "1",
+            "igmp_snooping": "0",
+            "isolate": "0",
+            "bridge_empty": "1",
+            "disabled": "1"
+          },
+          "policy_relay_lo_rt_lan": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "policy_relay_lo_rt_lan",
+            ".index": 13,
+            "lookup": "16800",
+            "in": "loopback",
+            "priority": "1"
+          },
+          "tethering6": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "tethering6",
+            ".index": 14,
+            "device": "@tethering",
+            "proto": "dhcpv6",
+            "disabled": "1"
+          },
+          "wwan6": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "wwan6",
+            ".index": 15,
+            "device": "@wwan",
+            "proto": "dhcpv6",
+            "disabled": "1"
+          },
+          "wwan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "wwan",
+            ".index": 16,
+            "proto": "dhcp",
+            "classlessroute": "0",
+            "metric": "20"
+          },
+          "secondwan": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "secondwan",
+            ".index": 17,
+            "ipv6": "0",
+            "proto": "dhcp",
+            "metric": "15",
+            "force_link": "0",
+            "classlessroute": "0"
+          },
+          "secondwan6": {
+            ".anonymous": 0,
+            ".type": "interface",
+            ".name": "secondwan6",
+            ".index": 18,
+            "proto": "dhcpv6",
+            "device": "@secondwan",
+            "disabled": "1"
+          },
+          "novpn_to_main": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "novpn_to_main",
+            ".index": 19,
+            "gl_vpn_rules": "1",
+            "mark": "0x8000/0xf000",
+            "priority": "6000",
+            "lookup": "main",
+            "disabled": "0"
+          },
+          "vpn_to_main": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "vpn_to_main",
+            ".index": 20,
+            "gl_vpn_rules": "1",
+            "mark": "0x0/0xf000",
+            "priority": "9000",
+            "lookup": "main",
+            "invert": "1",
+            "disabled": "0"
+          },
+          "vpn_leak_block": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "vpn_leak_block",
+            ".index": 21,
+            "gl_vpn_rules": "1",
+            "mark": "0x0/0xf000",
+            "priority": "9910",
+            "action": "blackhole",
+            "invert": "1",
+            "disabled": "0"
+          },
+          "vpn_block_lan_leak": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "vpn_block_lan_leak",
+            ".index": 22,
+            "gl_vpn_rules": "1",
+            "in": "lan",
+            "priority": "9920",
+            "action": "blackhole",
+            "disabled": "0"
+          },
+          "vpn_block_guest_leak": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "vpn_block_guest_leak",
+            ".index": 23,
+            "gl_vpn_rules": "1",
+            "in": "guest",
+            "priority": "9920",
+            "action": "blackhole",
+            "disabled": "0"
+          },
+          "vpn_block_wgserver_leak": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "vpn_block_wgserver_leak",
+            ".index": 24,
+            "gl_vpn_rules": "1",
+            "in": "wgserver",
+            "priority": "9920",
+            "action": "blackhole",
+            "disabled": "0"
+          },
+          "vpn_block_ovpnserver_leak": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "vpn_block_ovpnserver_leak",
+            ".index": 25,
+            "gl_vpn_rules": "1",
+            "in": "ovpnserver",
+            "priority": "9920",
+            "action": "blackhole",
+            "disabled": "0"
+          },
+          "main_static_net": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "main_static_net",
+            ".index": 26,
+            "gl_vpn_rules": "1",
+            "suppress_prefixlength": "0",
+            "priority": "800",
+            "lookup": "9910",
+            "disabled": "0"
+          }
+        }
+      }
+    ],
+    [
+      "openvpn",
+      {
+        "values": {
+          "custom_config": {
+            ".anonymous": 0,
+            ".type": "openvpn",
+            ".name": "custom_config",
+            ".index": 0,
+            "enabled": "0",
+            "config": "SECRET-16"
+          },
+          "sample_server": {
+            ".anonymous": 0,
+            ".type": "openvpn",
+            ".name": "sample_server",
+            ".index": 1,
+            "enabled": "0",
+            "port": "1194",
+            "proto": "SECRET-17",
+            "dev": "SECRET-18",
+            "ca": "SECRET-19",
+            "cert": "SECRET-20",
+            "key": "SECRET-21",
+            "dh": "SECRET-22",
+            "server": "SECRET-23",
+            "ifconfig_pool_persist": "SECRET-24",
+            "keepalive": "SECRET-25",
+            "persist_key": "SECRET-2",
+            "persist_tun": "SECRET-2",
+            "user": "SECRET-26",
+            "status": "SECRET-27",
+            "verb": "SECRET-13"
+          },
+          "sample_client": {
+            ".anonymous": 0,
+            ".type": "openvpn",
+            ".name": "sample_client",
+            ".index": 2,
+            "enabled": "0",
+            "client": "SECRET-2",
+            "dev": "SECRET-18",
+            "proto": "SECRET-17",
+            "remote": [
+              "my_server_1 1194"
+            ],
+            "resolv_retry": "SECRET-28",
+            "nobind": "SECRET-2",
+            "persist_key": "SECRET-2",
+            "persist_tun": "SECRET-2",
+            "user": "SECRET-26",
+            "ca": "SECRET-19",
+            "cert": "SECRET-29",
+            "key": "SECRET-30",
+            "verb": "SECRET-13"
+          }
+        }
+      }
+    ],
+    [
+      "oui-httpd",
+      {
+        "values": {
+          "main": {
+            ".anonymous": 0,
+            ".type": "oui-httpd",
+            ".name": "main",
+            ".index": 0,
+            "security_rule": "1",
+            "max_login_fail": "10",
+            "login_fail_wait": "600",
+            "lang": "en",
+            "inited": "1",
+            "console_disabled": "0"
+          },
+          "cfg024042": {
+            ".anonymous": 1,
+            ".type": "no-auth-methods",
+            ".name": "cfg024042",
+            ".index": 1,
+            "object": "ui",
+            "method": [
+              "get_lang",
+              "load_locales",
+              "check_initialized",
+              "get_wifi_config_init",
+              "init",
+              "get_timezone_list"
+            ]
+          },
+          "cfg034042": {
+            ".anonymous": 1,
+            ".type": "no-auth-methods",
+            ".name": "cfg034042",
+            ".index": 2,
+            "object": "system",
+            "method": [
+              "get_timezone_list"
+            ]
+          }
+        }
+      }
+    ],
+    [
+      "ovpnclient",
+      {
+        "values": {
+          "cfg0178c3": {
+            ".anonymous": 1,
+            ".type": "providers",
+            ".name": "cfg0178c3",
+            ".index": 0,
+            "provider": "SECRET-31",
+            "auth_type": "SECRET-2",
+            "procedure": "SECRET-2"
+          },
+          "cfg0278c3": {
+            ".anonymous": 1,
+            ".type": "providers",
+            ".name": "cfg0278c3",
+            ".index": 1,
+            "provider": "SECRET-32",
+            "auth_type": "SECRET-2",
+            "procedure": "SECRET-3"
+          }
+        }
+      }
+    ],
+    [
+      "ovpnserver",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "general",
+            ".name": "global",
+            ".index": 0,
+            "enable": "SECRET-3",
+            "access": "SECRET-33",
+            "masq": "SECRET-2"
+          },
+          "vpn": {
+            ".anonymous": 0,
+            ".type": "service",
+            ".name": "vpn",
+            ".index": 1,
+            "auth": "SECRET-34",
+            "proto": "SECRET-17",
+            "port": "1194",
+            "dev": "SECRET-35",
+            "dev_type": "SECRET-18",
+            "cipher": "SECRET-36",
+            "comp": "SECRET-37",
+            "subnetv4": "SECRET-38",
+            "mask": "SECRET-39",
+            "host": "SECRET-40",
+            "start": "SECRET-41",
+            "end": "SECRET-42",
+            "verb": "SECRET-13",
+            "access_scope": "SECRET-2",
+            "client_auth": "SECRET-2",
+            "tap_address": "SECRET-43",
+            "tap_mask": "SECRET-39",
+            "subnetv6": "SECRET-44"
+          }
+        }
+      }
+    ],
+    [
+      "parental_control",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "enable": "0",
+            "drop_anonymous": "0",
+            "auto_update": "0",
+            "enable_app": "0",
+            "log_level": "2",
+            "src_dev": [
+              "br-lan",
+              "br-guest"
+            ]
+          },
+          "drop": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "drop",
+            ".index": 1,
+            "name": "drop_all",
+            "action": "DROP",
+            "color": " #e982a5",
+            "preset": "1"
+          },
+          "accept": {
+            ".anonymous": 0,
+            ".type": "rule",
+            ".name": "accept",
+            ".index": 2,
+            "name": "accept_all",
+            "action": "ACCEPT",
+            "color": "#4bd9cc",
+            "preset": "1"
+          }
+        }
+      }
+    ],
+    [
+      "plugins",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "plugins",
+            ".name": "global",
+            ".index": 0,
+            "update_time": "0",
+            "update_status": "0"
+          }
+        }
+      }
+    ],
+    [
+      "qos",
+      {
+        "values": {
+          "general": {
+            ".anonymous": 0,
+            ".type": "qos",
+            ".name": "general",
+            ".index": 0,
+            "enable": "0",
+            "model": "cake",
+            "upload": "1000",
+            "download": "1000",
+            "sum": "0"
+          },
+          "cfg02ba0b": {
+            ".anonymous": 1,
+            ".type": "wan",
+            ".name": "cfg02ba0b",
+            ".index": 1,
+            "upload": "1000",
+            "download": "1000"
+          },
+          "cfg0357c2": {
+            ".anonymous": 1,
+            ".type": "wwan",
+            ".name": "cfg0357c2",
+            ".index": 2,
+            "upload": "1000",
+            "download": "1000"
+          },
+          "cfg04c00f": {
+            ".anonymous": 1,
+            ".type": "tethering",
+            ".name": "cfg04c00f",
+            ".index": 3,
+            "upload": "1000",
+            "download": "1000"
+          },
+          "cfg0503f7": {
+            ".anonymous": 1,
+            ".type": "modem",
+            ".name": "cfg0503f7",
+            ".index": 4,
+            "upload": "1000",
+            "download": "1000"
+          }
+        }
+      }
+    ],
+    [
+      "repeater",
+      {
+        "values": {
+          "cfg017f6a": {
+            ".anonymous": 1,
+            ".type": "main",
+            ".name": "cfg017f6a",
+            ".index": 0,
+            "auto": "1",
+            "level": "6",
+            "switch_interval": "30",
+            "macaddr": "92:83:c4:d0:f7:96",
+            "disabled": "0"
+          },
+          "cfg0202af": {
+            ".anonymous": 1,
+            ".type": "network",
+            ".name": "cfg0202af",
+            ".index": 1,
+            "ssid": "Buzios-5G",
+            "key": "SECRET-45",
+            "network": "lan",
+            "bssid": "8e:f0:0f:3f:fa:bf",
+            "wds": "1",
+            "auto_portal": "0",
+            "disguise": "0",
+            "selected": "1"
+          }
+        }
+      }
+    ],
+    [
+      "roteador",
+      {
+        "values": {
+          "fleet": {
+            ".anonymous": 0,
+            ".type": "managed",
+            ".name": "fleet",
+            ".index": 0,
+            "owner": "pleme-io",
+            "managed_by": "plo",
+            "model": "GL-MT6000",
+            "via": "ubus-http"
+          }
+        }
+      }
+    ],
+    [
+      "route_policy",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "policy",
+            ".name": "global",
+            ".index": 0,
+            "enabled": "1",
+            "mode": "0",
+            "instance_on": "0",
+            "service_policy_en": "0"
+          },
+          "cfg02548a": {
+            ".anonymous": 1,
+            ".type": "default",
+            ".name": "cfg02548a",
+            ".index": 1,
+            "type": "default",
+            "via": "novpn",
+            "name": "last sort default policy",
+            "from_type": "device",
+            "tunnel_id": "100",
+            "enabled": "1",
+            "mark": "0x8000"
+          },
+          "gl_process": {
+            ".anonymous": 0,
+            ".type": "rule_process",
+            ".name": "gl_process",
+            ".index": 2,
+            "name": "process policy",
+            "from_type": "process_gid",
+            "from": [
+              "10000"
+            ],
+            "tunnel_id": "201",
+            "enabled": "1",
+            "via": "novpn",
+            "mark": "0x8000"
+          },
+          "cfg0492bd": {
+            ".anonymous": 1,
+            ".type": "rule",
+            ".name": "cfg0492bd",
+            ".index": 3,
+            "enabled": "0",
+            "killswitch": "1",
+            "tunnel_id": "10",
+            "name": "Primary Tunnel",
+            "options_in_used": "0"
+          },
+          "gl_process_vpn": {
+            ".anonymous": 0,
+            ".type": "rule_process",
+            ".name": "gl_process_vpn",
+            ".index": 4,
+            "name": "process policy",
+            "from_type": "process_gid",
+            "from": "20000",
+            "tunnel_id": "10100",
+            "enabled": "1",
+            "via": "wgclient1",
+            "mark": "0x1000"
+          }
+        }
+      }
+    ],
+    [
+      "rpcd",
+      {
+        "values": {
+          "cfg017c4e": {
+            ".anonymous": 1,
+            ".type": "rpcd",
+            ".name": "cfg017c4e",
+            ".index": 0,
+            "socket": "SECRET-46",
+            "timeout": "SECRET-47"
+          },
+          "cfg02f8be": {
+            ".anonymous": 1,
+            ".type": "login",
+            ".name": "cfg02f8be",
+            ".index": 1,
+            "username": "SECRET-48",
+            "password": "SECRET-49",
+            "read": [
+              "*"
+            ],
+            "write": [
+              "*"
+            ]
+          }
+        }
+      }
+    ],
+    [
+      "rtty",
+      {
+        "values": {
+          "general": {
+            ".anonymous": 0,
+            ".type": "rtty",
+            ".name": "general",
+            ".index": 0
+          }
+        }
+      }
+    ],
+    [
+      "samba4",
+      {
+        "values": {
+          "cfg010f89": {
+            ".anonymous": 1,
+            ".type": "samba",
+            ".name": "cfg010f89",
+            ".index": 0,
+            "workgroup": "SECRET-50",
+            "charset": "SECRET-51",
+            "description": "SECRET-52"
+          }
+        }
+      }
+    ],
+    [
+      "sip_alg",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "enable": "0",
+            "helper": "0"
+          }
+        }
+      }
+    ],
+    [
+      "stubby",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "stubby",
+            ".name": "global",
+            ".index": 0,
+            "manual": "SECRET-3",
+            "trigger": "SECRET-53",
+            "dns_transport": [
+              "GETDNS_TRANSPORT_TLS"
+            ],
+            "tls_authentication": "SECRET-2",
+            "tls_query_padding_blocksize": "SECRET-54",
+            "appdata_dir": "SECRET-55",
+            "edns_client_subnet_private": "SECRET-2",
+            "idle_timeout": "SECRET-56",
+            "round_robin_upstreams": "SECRET-2",
+            "listen_address": [
+              "127.0.0.1@5453",
+              "0::1@5453"
+            ]
+          },
+          "cfg022af7": {
+            ".anonymous": 1,
+            ".type": "resolver",
+            ".name": "cfg022af7",
+            ".index": 1,
+            "address": "SECRET-57",
+            "tls_auth_name": "SECRET-58"
+          },
+          "cfg032af7": {
+            ".anonymous": 1,
+            ".type": "resolver",
+            ".name": "cfg032af7",
+            ".index": 2,
+            "address": "SECRET-59",
+            "tls_auth_name": "SECRET-58"
+          },
+          "cfg042af7": {
+            ".anonymous": 1,
+            ".type": "resolver",
+            ".name": "cfg042af7",
+            ".index": 3,
+            "address": "SECRET-60",
+            "tls_auth_name": "SECRET-58"
+          },
+          "cfg052af7": {
+            ".anonymous": 1,
+            ".type": "resolver",
+            ".name": "cfg052af7",
+            ".index": 4,
+            "address": "SECRET-61",
+            "tls_auth_name": "SECRET-58"
+          }
+        }
+      }
+    ],
+    [
+      "switch-button",
+      {
+        "values": {
+          "cfg017f6a": {
+            ".anonymous": 1,
+            ".type": "main",
+            ".name": "cfg017f6a",
+            ".index": 0
+          }
+        }
+      }
+    ],
+    [
+      "system",
+      {
+        "values": {
+          "system_0": {
+            ".anonymous": 0,
+            ".type": "system",
+            ".name": "system_0",
+            ".index": 0,
+            "log_size": "64",
+            "urandom_seed": "0",
+            "compat_version": "1.0",
+            "cronloglevel": "10",
+            "ttylogin": "1",
+            "timezone": "<-03>3",
+            "zonename": "America/Fortaleza",
+            "hostname": "repetidor-buzios"
+          },
+          "ntp": {
+            ".anonymous": 0,
+            ".type": "timeserver",
+            ".name": "ntp",
+            ".index": 1,
+            "enabled": "1",
+            "enable_server": "0",
+            "server": [
+              "0.openwrt.pool.ntp.org",
+              "1.openwrt.pool.ntp.org",
+              "2.openwrt.pool.ntp.org",
+              "3.openwrt.pool.ntp.org"
+            ]
+          }
+        }
+      }
+    ],
+    [
+      "tailscale",
+      {
+        "values": {
+          "settings": {
+            ".anonymous": 0,
+            ".type": "settings",
+            ".name": "settings",
+            ".index": 0,
+            "log_stderr": "1",
+            "log_stdout": "1",
+            "port": "41641",
+            "state_file": "/etc/tailscale/tailscaled.state",
+            "enabled": "1"
+          }
+        }
+      }
+    ],
+    [
+      "tor",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "global",
+            ".name": "global",
+            ".index": 0,
+            "enable": "SECRET-3",
+            "manual": "SECRET-3",
+            "countries": "SECRET-62"
+          }
+        }
+      }
+    ],
+    [
+      "ubootenv",
+      {
+        "values": {
+          "cfg016cb7": {
+            ".anonymous": 1,
+            ".type": "ubootenv",
+            ".name": "cfg016cb7",
+            ".index": 0,
+            "dev": "/dev/mmcblk0p1",
+            "offset": "0x0",
+            "envsize": "0x80000"
+          }
+        }
+      }
+    ],
+    [
+      "uhttpd",
+      {
+        "values": {
+          "main": {
+            ".anonymous": 0,
+            ".type": "uhttpd",
+            ".name": "main",
+            ".index": 0,
+            "redirect_https": "SECRET-3",
+            "home": "SECRET-63",
+            "rfc1918_filter": "SECRET-2",
+            "max_requests": "SECRET-13",
+            "max_connections": "SECRET-64",
+            "cert": "SECRET-65",
+            "key": "SECRET-66",
+            "cgi_prefix": "SECRET-67",
+            "lua_prefix": [
+              "/cgi-bin/luci=/usr/lib/lua/luci/sgi/uhttpd.lua"
+            ],
+            "script_timeout": "SECRET-68",
+            "network_timeout": "SECRET-47",
+            "http_keepalive": "SECRET-69",
+            "tcp_keepalive": "SECRET-2",
+            "ubus_prefix": "SECRET-70",
+            "listen_http": [
+              "127.0.0.1:8080"
+            ],
+            "listen_https": [
+              "127.0.0.1:8443"
+            ]
+          },
+          "defaults": {
+            ".anonymous": 0,
+            ".type": "cert",
+            ".name": "defaults",
+            ".index": 1,
+            "days": "SECRET-71",
+            "key_type": "SECRET-72",
+            "bits": "SECRET-73",
+            "ec_curve": "SECRET-74",
+            "country": "ZZ",
+            "state": "SECRET-75",
+            "location": "SECRET-76",
+            "commonname": "SECRET-77"
+          }
+        }
+      }
+    ],
+    [
+      "upgrade",
+      {
+        "values": {
+          "general": {
+            ".anonymous": 0,
+            ".type": "service",
+            ".name": "general",
+            ".index": 0,
+            "keep_config": "0",
+            "keep_package": "0",
+            "prompt": "1",
+            "gray_prompt": "1"
+          }
+        }
+      }
+    ],
+    [
+      "wan-access",
+      {
+        "values": {
+          "cfg017f6a": {
+            ".anonymous": 1,
+            ".type": "main",
+            ".name": "cfg017f6a",
+            ".index": 0,
+            "whitelist": "0"
+          }
+        }
+      }
+    ],
+    [
+      "wireguard",
+      {
+        "values": {
+          "global": {
+            ".anonymous": 0,
+            ".type": "proxy",
+            ".name": "global",
+            ".index": 0,
+            "global_proxy": "SECRET-2"
+          },
+          "AzireVPN": {
+            ".anonymous": 0,
+            ".type": "providers",
+            ".name": "AzireVPN",
+            ".index": 1,
+            "auth_type": "SECRET-2",
+            "procedure": "SECRET-3",
+            "referral_code": "SECRET-78"
+          },
+          "Hideme": {
+            ".anonymous": 0,
+            ".type": "providers",
+            ".name": "Hideme",
+            ".index": 2,
+            "auth_type": "SECRET-2",
+            "procedure": "SECRET-3"
+          },
+          "IPVanish": {
+            ".anonymous": 0,
+            ".type": "providers",
+            ".name": "IPVanish",
+            ".index": 3,
+            "auth_type": "SECRET-2",
+            "procedure": "SECRET-2"
+          },
+          "Mullvad": {
+            ".anonymous": 0,
+            ".type": "providers",
+            ".name": "Mullvad",
+            ".index": 4,
+            "auth_type": "SECRET-12",
+            "procedure": "SECRET-2"
+          },
+          "NordVPN": {
+            ".anonymous": 0,
+            ".type": "providers",
+            ".name": "NordVPN",
+            ".index": 5,
+            "auth_type": "SECRET-12",
+            "procedure": "SECRET-2"
+          },
+          "PIA": {
+            ".anonymous": 0,
+            ".type": "providers",
+            ".name": "PIA",
+            ".index": 6,
+            "auth_type": "SECRET-2",
+            "procedure": "SECRET-2"
+          },
+          "Surfshark": {
+            ".anonymous": 0,
+            ".type": "providers",
+            ".name": "Surfshark",
+            ".index": 7,
+            "auth_type": "SECRET-2",
+            "procedure": "SECRET-2"
+          },
+          "FromApp": {
+            ".anonymous": 0,
+            ".type": "providers",
+            ".name": "FromApp",
+            ".index": 8,
+            "auth_type": "SECRET-2",
+            "procedure": "SECRET-3"
+          }
+        }
+      }
+    ],
+    [
+      "wireguard_server",
+      {
+        "values": {
+          "main_server": {
+            ".anonymous": 0,
+            ".type": "servers",
+            ".name": "main_server",
+            ".index": 0,
+            "address_v4": "SECRET-79",
+            "port": "51820",
+            "access": "SECRET-33",
+            "fwmark": "SECRET-80",
+            "client_to_client": "SECRET-3",
+            "masq": "SECRET-2",
+            "address_v6": "SECRET-81"
+          }
+        }
+      }
+    ],
+    [
+      "wireless",
+      {
+        "values": {
+          "mt798611": {
+            ".anonymous": 0,
+            ".type": "wifi-device",
+            ".name": "mt798611",
+            ".index": 0,
+            "type": "SECRET-82",
+            "band": "2g",
+            "htmode": "HE40",
+            "channel": "auto",
+            "txpower": "SECRET-64",
+            "country": "US",
+            "random_bssid": "SECRET-2",
+            "disabled": "0",
+            "legacy_rates": "SECRET-3"
+          },
+          "wifi2g": {
+            ".anonymous": 0,
+            ".type": "wifi-iface",
+            ".name": "wifi2g",
+            ".index": 1,
+            "device": "mt798611",
+            "mode": "ap",
+            "network": "lan",
+            "ifname": "ra0",
+            "encryption": "psk2",
+            "wds": "1",
+            "isolate": "0",
+            "hidden": "0",
+            "ieee80211k": "SECRET-2",
+            "bss_transition": "SECRET-2",
+            "key": "SECRET-45",
+            "macaddr": "SECRET-83",
+            "ssid": "Buzios"
+          },
+          "mt798612": {
+            ".anonymous": 0,
+            ".type": "wifi-device",
+            ".name": "mt798612",
+            ".index": 2,
+            "type": "SECRET-82",
+            "band": "5g",
+            "channel": "auto",
+            "txpower": "SECRET-64",
+            "country": "US",
+            "random_bssid": "SECRET-2",
+            "disabled": "0",
+            "htmode": "HE160"
+          },
+          "wifi5g": {
+            ".anonymous": 0,
+            ".type": "wifi-iface",
+            ".name": "wifi5g",
+            ".index": 3,
+            "device": "mt798612",
+            "mode": "ap",
+            "network": "lan",
+            "ifname": "rax0",
+            "encryption": "psk2",
+            "wds": "1",
+            "isolate": "0",
+            "hidden": "0",
+            "ieee80211k": "SECRET-2",
+            "bss_transition": "SECRET-2",
+            "key": "SECRET-45",
+            "disabled": "0",
+            "macaddr": "SECRET-84",
+            "ssid": "Buzios-5G"
+          },
+          "guest2g": {
+            ".anonymous": 0,
+            ".type": "wifi-iface",
+            ".name": "guest2g",
+            ".index": 4,
+            "device": "mt798611",
+            "network": "guest",
+            "mode": "ap",
+            "ifname": "ra1",
+            "encryption": "psk2",
+            "key": "SECRET-85",
+            "ssid": "GL-MT6000-793-Guest",
+            "guest": "SECRET-2",
+            "disabled": "1",
+            "wds": "1",
+            "isolate": "1",
+            "hidden": "0",
+            "macaddr": "SECRET-86"
+          },
+          "guest5g": {
+            ".anonymous": 0,
+            ".type": "wifi-iface",
+            ".name": "guest5g",
+            ".index": 5,
+            "device": "mt798612",
+            "network": "guest",
+            "mode": "ap",
+            "ifname": "rax1",
+            "encryption": "psk2",
+            "key": "SECRET-85",
+            "ssid": "GL-MT6000-793-5G-Guest",
+            "guest": "SECRET-2",
+            "disabled": "1",
+            "wds": "1",
+            "isolate": "1",
+            "hidden": "0",
+            "macaddr": "SECRET-87"
+          }
+        }
+      }
+    ],
+    [
+      "zerotier",
+      {
+        "values": {
+          "gl": {
+            ".anonymous": 0,
+            ".type": "zerotier",
+            ".name": "gl",
+            ".index": 0,
+            "enabled": "0",
+            "nat": "SECRET-3",
+            "wan_nat": "SECRET-3"
+          }
+        }
+      }
+    ]
+  ]
+}
+
