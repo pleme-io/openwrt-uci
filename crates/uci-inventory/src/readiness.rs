@@ -150,6 +150,9 @@ pub fn judge(inv: &Inventory, uncommitted: Option<usize>) -> Vec<Check> {
         },
     });
 
+    // ── 6b. A device that disagrees with itself ─────────────────────────────
+    out.push(secrets_agree(inv));
+
     // ── 7–8. The two things UCI genuinely cannot answer ─────────────────────
     out.push(Check {
         name: "clock-correct",
@@ -167,6 +170,42 @@ pub fn judge(inv: &Inventory, uncommitted: Option<usize>) -> Vec<Check> {
     });
 
     out
+}
+
+/// Does every carrier of a secret option hold the SAME secret?
+///
+/// ★ MEASURED 2026-09-09. A router's 5 GHz band carried a different PSK than
+/// its 2.4 GHz band. Every derivable field matched, so nothing in the chart
+/// could see it — `wireless` is secret-bearing and its values never leave the
+/// device. It surfaced only when a repeater refused to associate, reporting
+/// `fail_type: "key"`, which reads as "you supplied the wrong password" and
+/// sends the diagnosis toward the client instead of the AP that disagrees with
+/// itself.
+///
+/// This compares, it never reads: only the boolean from `SecretAgreement`
+/// reaches here, so the check runs against a survey that carries no secret.
+fn secrets_agree(inv: &Inventory) -> Check {
+    let disagreeing: Vec<String> = inv
+        .packages
+        .iter()
+        .flat_map(|p| {
+            p.secret_agreement
+                .iter()
+                .filter(|a| !a.agree)
+                .map(move |a| format!("{}.{} across {}", p.name, a.option, a.sections.join("/")))
+        })
+        .collect();
+    Check {
+        name: "secrets-agree-across-bands",
+        because: "a per-band PSK divergence is invisible in every derivable field — the bands \
+                  look identically configured — and announces itself only as a client that \
+                  cannot associate, blaming the client",
+        verdict: if disagreeing.is_empty() {
+            Verdict::Pass
+        } else {
+            Verdict::Fail(format!("secret disagrees between carriers: {}", disagreeing.join(", ")))
+        },
+    }
 }
 
 /// Fit to ship? Only if nothing FAILED. Unobservables never count as passes.
@@ -192,7 +231,12 @@ mod tests {
         }
     }
     fn pkg(name: &str, s: Vec<Section>) -> Package {
-        Package { name: name.to_owned(), disposition: Disposition::Managed, sections: s }
+        Package {
+            name: name.to_owned(),
+            disposition: Disposition::Managed,
+            sections: s,
+            secret_agreement: vec![],
+        }
     }
     fn good() -> Inventory {
         Inventory {
@@ -229,6 +273,21 @@ mod tests {
             })),
             ("fleet-marker", Box::new(|i: &mut Inventory| {
                 i.packages[2].sections[0].options.clear();
+            })),
+            // The 2026-09-09 incident, reproduced: two bands, one PSK each,
+            // and they differ. Note the fixture carries no secret VALUE —
+            // there is nowhere to put one, which is the point.
+            ("secrets-agree-across-bands", Box::new(|i: &mut Inventory| {
+                i.packages.push(Package {
+                    name: "wireless".to_owned(),
+                    disposition: Disposition::SecretBearing { why: "PSKs" },
+                    sections: vec![],
+                    secret_agreement: vec![crate::inventory::SecretAgreement {
+                        option: "key".to_owned(),
+                        sections: vec!["wifi2g".to_owned(), "wifi5g".to_owned()],
+                        agree: false,
+                    }],
+                });
             })),
         ];
         for (name, break_it) in cases {

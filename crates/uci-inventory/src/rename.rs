@@ -287,7 +287,12 @@ mod tests {
         }
     }
     fn pkg(sections: Vec<Section>) -> Package {
-        Package { name: "firewall".to_owned(), disposition: Disposition::Managed, sections }
+        Package {
+            name: "firewall".to_owned(),
+            disposition: Disposition::Managed,
+            sections,
+            secret_agreement: vec![],
+        }
     }
 
     #[test]

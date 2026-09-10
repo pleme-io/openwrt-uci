@@ -278,6 +278,7 @@ mod tests {
                 Package {
                     name: "network".to_owned(),
                     disposition: Disposition::Managed,
+                    secret_agreement: vec![],
                     sections: vec![
                         Section {
                             addr: SectionAddr::Named("lan".to_owned()),
@@ -302,6 +303,7 @@ mod tests {
                     name: "wireless".to_owned(),
                     disposition: Disposition::SecretBearing { why: "psk" },
                     sections: vec![],
+                    secret_agreement: vec![],
                 },
             ],
         }
@@ -344,6 +346,7 @@ mod tests {
             packages: vec![Package {
                 name: "x".to_owned(),
                 disposition: Disposition::Managed,
+                secret_agreement: vec![],
                 sections: vec![Section {
                     addr: SectionAddr::Named("s".to_owned()),
                     internal_name: "s".to_owned(),

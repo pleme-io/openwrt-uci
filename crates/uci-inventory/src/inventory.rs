@@ -77,12 +77,44 @@ pub struct Section {
     pub secret_options: Vec<String>,
 }
 
+/// Whether every section carrying a given secret option carries the SAME one.
+///
+/// ★ A VERDICT, NEVER A VALUE — and that distinction is the whole design.
+///
+/// Secret values are dropped at parse time and never enter the inventory, so
+/// nothing downstream can compare them. But *whether they agree* is not itself
+/// a secret, and it is worth knowing: measured 2026-09-09, a router's 5 GHz
+/// band carried a different PSK than its 2.4 GHz band. Nothing reported it.
+/// The bands looked identically configured in every derivable field, the
+/// divergence was invisible to the chart (which must never see a PSK), and it
+/// surfaced only as a repeater refusing to associate with `fail_type: "key"` —
+/// a failure that reads as "wrong password supplied" rather than "this device
+/// disagrees with itself".
+///
+/// ★ NO DIGEST IS KEPT, deliberately. A hash of an 11-character PSK is
+/// brute-forceable in seconds, so persisting one would leak the secret through
+/// a field that merely looks safe. Equality is computed inside the same pass
+/// that discards the values, and only this boolean survives.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SecretAgreement {
+    /// The secret-bearing option compared, e.g. `key`.
+    pub option: String,
+    /// The sections that carry it, in survey order. Names only.
+    pub sections: Vec<String>,
+    /// True when every carrier holds an identical value.
+    pub agree: bool,
+}
+
 /// One UCI package and what we do with it.
 #[derive(Debug, Clone)]
 pub struct Package {
     pub name: String,
     pub disposition: Disposition,
     pub sections: Vec<Section>,
+    /// Per-option agreement across this package's sections. Empty unless at
+    /// least two sections carry the same secret option — one carrier cannot
+    /// disagree with anything.
+    pub secret_agreement: Vec<SecretAgreement>,
 }
 
 /// The whole device.
@@ -205,6 +237,10 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
 
     let mut per_type: BTreeMap<String, usize> = BTreeMap::new();
     let mut sections = Vec::new();
+    // Secret values live ONLY here, on the stack, for the length of this call.
+    // They are compared for equality below and then dropped with the function
+    // frame — never stored, never digested, never emitted. See `SecretAgreement`.
+    let mut secret_vals: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
 
     for (key, val) in raw {
         let section_type = obj(val, ".type")
@@ -257,6 +293,17 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
                 }
                 if option_is_secret(k) {
                     secret_options.push(k.clone());
+                    // Compared for agreement, then dropped. An empty value is
+                    // NOT recorded: an unset PSK is an absence, and counting it
+                    // as a disagreement would fire on every disabled radio.
+                    if let Some(s) = scalar(v)
+                        && !s.is_empty()
+                    {
+                        secret_vals
+                            .entry(k.clone())
+                            .or_default()
+                            .push((internal_name.clone(), s));
+                    }
                     continue; // never carried into the inventory
                 }
                 if let Some(s) = scalar(v) {
@@ -273,7 +320,32 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
         sections.push(Section { addr, internal_name, section_type, options, secret_options });
     }
 
-    Ok(Package { name: name.to_owned(), disposition, sections })
+    let secret_agreement = agreements(secret_vals);
+
+    Ok(Package { name: name.to_owned(), disposition, sections, secret_agreement })
+}
+
+/// Collapse staged secret values into verdicts, consuming them.
+///
+/// Takes the map BY VALUE so the caller cannot keep the secrets after asking
+/// the question — the values are dropped when this returns, and only booleans
+/// and section names survive. See `SecretAgreement` for why no digest is kept.
+fn agreements(secret_vals: BTreeMap<String, Vec<(String, String)>>) -> Vec<SecretAgreement> {
+    let mut out: Vec<SecretAgreement> = secret_vals
+        .into_iter()
+        // One carrier cannot disagree with anything.
+        .filter(|(_, carriers)| carriers.len() > 1)
+        .map(|(option, carriers)| {
+            let first = &carriers[0].1;
+            SecretAgreement {
+                option,
+                agree: carriers.iter().all(|(_, v)| v == first),
+                sections: carriers.into_iter().map(|(s, _)| s).collect(),
+            }
+        })
+        .collect();
+    out.sort_by(|a, b| a.option.cmp(&b.option));
+    out
 }
 
 /// Assemble an inventory, refusing anything unaccounted for.
@@ -472,6 +544,62 @@ mod tests {
         assert!(!s.options.contains_key("key"), "secret value leaked into inventory");
         assert_eq!(s.options["port"], "51820");
         assert_eq!(s.secret_options, vec!["key".to_owned()]);
+    }
+
+    /// The 2026-09-09 incident: two bands, two different PSKs, and every
+    /// derivable field identical. Only the verdict is kept.
+    #[test]
+    fn a_per_band_secret_divergence_is_detected() {
+        let body = pkg_json(
+            r#"{"values":{
+                "wifi2g":{".type":"wifi-iface",".name":"wifi2g",".anonymous":0,".index":0,"key":"same-psk","ssid":"H"},
+                "wifi5g":{".type":"wifi-iface",".name":"wifi5g",".anonymous":0,".index":1,"key":"DIFFERENT","ssid":"H-5G"}
+            }}"#,
+        );
+        let inv = survey(&[("wireless".to_owned(), body)]).expect("surveys");
+        let a = &inv.packages[0].secret_agreement;
+        assert_eq!(a.len(), 1, "one compared option");
+        assert_eq!(a[0].option, "key");
+        assert!(!a[0].agree, "divergent PSKs must not read as agreement");
+        assert_eq!(a[0].sections, vec!["wifi2g".to_owned(), "wifi5g".to_owned()]);
+
+        // ★ THE SECURITY PROPERTY, asserted rather than asserted-in-prose: the
+        // verdict exists and NEITHER value is recoverable from anywhere in the
+        // inventory — not in options, not in a digest, not in the report.
+        let rendered = format!("{inv:?}");
+        assert!(!rendered.contains("same-psk"), "a PSK reached a Debug rendering");
+        assert!(!rendered.contains("DIFFERENT"), "a PSK reached a Debug rendering");
+    }
+
+    #[test]
+    fn matching_secrets_agree_and_a_lone_carrier_is_not_compared() {
+        let agreeing = pkg_json(
+            r#"{"values":{
+                "a":{".type":"wifi-iface",".name":"a",".anonymous":0,".index":0,"key":"k"},
+                "b":{".type":"wifi-iface",".name":"b",".anonymous":0,".index":1,"key":"k"}
+            }}"#,
+        );
+        let inv = survey(&[("wireless".to_owned(), agreeing)]).expect("surveys");
+        assert!(inv.packages[0].secret_agreement[0].agree);
+
+        // One carrier cannot disagree with anything, so there is nothing to
+        // report — an empty agreement list here is a finding, not a gap.
+        let lone = pkg_json(
+            r#"{"values":{"a":{".type":"wifi-iface",".name":"a",".anonymous":0,".index":0,"key":"k"}}}"#,
+        );
+        let inv = survey(&[("wireless".to_owned(), lone)]).expect("surveys");
+        assert!(inv.packages[0].secret_agreement.is_empty());
+
+        // An UNSET psk is an absence, not a disagreement: a disabled radio must
+        // not turn the check red.
+        let unset = pkg_json(
+            r#"{"values":{
+                "a":{".type":"wifi-iface",".name":"a",".anonymous":0,".index":0,"key":"k"},
+                "b":{".type":"wifi-iface",".name":"b",".anonymous":0,".index":1,"key":""}
+            }}"#,
+        );
+        let inv = survey(&[("wireless".to_owned(), unset)]).expect("surveys");
+        assert!(inv.packages[0].secret_agreement.is_empty(), "an absent psk is not a divergence");
     }
 
     #[test]
