@@ -95,10 +95,26 @@ pub struct Section {
 /// brute-forceable in seconds, so persisting one would leak the secret through
 /// a field that merely looks safe. Equality is computed inside the same pass
 /// that discards the values, and only this boolean survives.
+/// ★ COMPARED WITHIN A NETWORK, NOT WITHIN A PACKAGE — measured the hard way.
+///
+/// The first cut compared every carrier of an option across the whole package
+/// and was WRONG on real hardware the first time it ran: it flagged
+/// `wireless.key across wifi2g/wifi5g/guest2g/guest5g` and `openvpn.key across
+/// sample_server/sample_client`, turning a healthy router `fitToShip: false`.
+/// Both are correct configurations. A guest network is SUPPOSED to have its own
+/// password, and an `OpenVPN` server key and client key are different objects.
+///
+/// A guard that fires on correct config does not get fixed, it gets ignored and
+/// then deleted — so the discriminator is the UCI `network` the section serves.
+/// Sections with no `network` option are never compared: a lone carrier per
+/// group cannot disagree, which is what makes openvpn fall out silently rather
+/// than by a special case naming it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SecretAgreement {
     /// The secret-bearing option compared, e.g. `key`.
     pub option: String,
+    /// The UCI network whose carriers were compared, e.g. `lan` or `guest`.
+    pub network: String,
     /// The sections that carry it, in survey order. Names only.
     pub sections: Vec<String>,
     /// True when every carrier holds an identical value.
@@ -240,7 +256,9 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
     // Secret values live ONLY here, on the stack, for the length of this call.
     // They are compared for equality below and then dropped with the function
     // frame — never stored, never digested, never emitted. See `SecretAgreement`.
-    let mut secret_vals: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+    // Keyed by (option, network) so credentials are compared only against the
+    // other carriers serving the SAME network.
+    let mut secret_vals: BTreeMap<(String, String), Vec<(String, String)>> = BTreeMap::new();
 
     for (key, val) in raw {
         let section_type = obj(val, ".type")
@@ -286,6 +304,7 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
 
         let mut options = BTreeMap::new();
         let mut secret_options = Vec::new();
+        let mut staged: Vec<(String, String)> = Vec::new();
         if let Json::Obj(fields) = val {
             for (k, v) in fields {
                 if k.starts_with('.') {
@@ -293,16 +312,15 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
                 }
                 if option_is_secret(k) {
                     secret_options.push(k.clone());
-                    // Compared for agreement, then dropped. An empty value is
-                    // NOT recorded: an unset PSK is an absence, and counting it
+                    // Staged, not yet grouped: the `network` this section serves
+                    // may appear after the secret in field order, so grouping
+                    // waits until the whole section is read. An empty value is
+                    // NOT recorded — an unset PSK is an absence, and counting it
                     // as a disagreement would fire on every disabled radio.
                     if let Some(s) = scalar(v)
                         && !s.is_empty()
                     {
-                        secret_vals
-                            .entry(k.clone())
-                            .or_default()
-                            .push((internal_name.clone(), s));
+                        staged.push((k.clone(), s));
                     }
                     continue; // never carried into the inventory
                 }
@@ -317,6 +335,19 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
         }
         secret_options.sort_unstable();
 
+        // Group the staged secrets by the network this section serves. A section
+        // with no `network` is never compared — that is what keeps an `OpenVPN`
+        // server key and client key from reading as a disagreement, without a
+        // special case naming openvpn.
+        if let Some(network) = options.get("network") {
+            for (opt, secret) in staged {
+                secret_vals
+                    .entry((opt, network.clone()))
+                    .or_default()
+                    .push((internal_name.clone(), secret));
+            }
+        }
+
         sections.push(Section { addr, internal_name, section_type, options, secret_options });
     }
 
@@ -330,21 +361,22 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
 /// Takes the map BY VALUE so the caller cannot keep the secrets after asking
 /// the question — the values are dropped when this returns, and only booleans
 /// and section names survive. See `SecretAgreement` for why no digest is kept.
-fn agreements(secret_vals: BTreeMap<String, Vec<(String, String)>>) -> Vec<SecretAgreement> {
+fn agreements(secret_vals: BTreeMap<(String, String), Vec<(String, String)>>) -> Vec<SecretAgreement> {
     let mut out: Vec<SecretAgreement> = secret_vals
         .into_iter()
         // One carrier cannot disagree with anything.
         .filter(|(_, carriers)| carriers.len() > 1)
-        .map(|(option, carriers)| {
+        .map(|((option, network), carriers)| {
             let first = &carriers[0].1;
             SecretAgreement {
                 option,
+                network,
                 agree: carriers.iter().all(|(_, v)| v == first),
                 sections: carriers.into_iter().map(|(s, _)| s).collect(),
             }
         })
         .collect();
-    out.sort_by(|a, b| a.option.cmp(&b.option));
+    out.sort_by(|a, b| (&a.option, &a.network).cmp(&(&b.option, &b.network)));
     out
 }
 
@@ -552,14 +584,15 @@ mod tests {
     fn a_per_band_secret_divergence_is_detected() {
         let body = pkg_json(
             r#"{"values":{
-                "wifi2g":{".type":"wifi-iface",".name":"wifi2g",".anonymous":0,".index":0,"key":"same-psk","ssid":"H"},
-                "wifi5g":{".type":"wifi-iface",".name":"wifi5g",".anonymous":0,".index":1,"key":"DIFFERENT","ssid":"H-5G"}
+                "wifi2g":{".type":"wifi-iface",".name":"wifi2g",".anonymous":0,".index":0,"network":"lan","key":"same-psk","ssid":"H"},
+                "wifi5g":{".type":"wifi-iface",".name":"wifi5g",".anonymous":0,".index":1,"network":"lan","key":"DIFFERENT","ssid":"H-5G"}
             }}"#,
         );
         let inv = survey(&[("wireless".to_owned(), body)]).expect("surveys");
         let a = &inv.packages[0].secret_agreement;
         assert_eq!(a.len(), 1, "one compared option");
         assert_eq!(a[0].option, "key");
+        assert_eq!(a[0].network, "lan");
         assert!(!a[0].agree, "divergent PSKs must not read as agreement");
         assert_eq!(a[0].sections, vec!["wifi2g".to_owned(), "wifi5g".to_owned()]);
 
@@ -575,8 +608,8 @@ mod tests {
     fn matching_secrets_agree_and_a_lone_carrier_is_not_compared() {
         let agreeing = pkg_json(
             r#"{"values":{
-                "a":{".type":"wifi-iface",".name":"a",".anonymous":0,".index":0,"key":"k"},
-                "b":{".type":"wifi-iface",".name":"b",".anonymous":0,".index":1,"key":"k"}
+                "a":{".type":"wifi-iface",".name":"a",".anonymous":0,".index":0,"network":"lan","key":"k"},
+                "b":{".type":"wifi-iface",".name":"b",".anonymous":0,".index":1,"network":"lan","key":"k"}
             }}"#,
         );
         let inv = survey(&[("wireless".to_owned(), agreeing)]).expect("surveys");
@@ -585,7 +618,7 @@ mod tests {
         // One carrier cannot disagree with anything, so there is nothing to
         // report — an empty agreement list here is a finding, not a gap.
         let lone = pkg_json(
-            r#"{"values":{"a":{".type":"wifi-iface",".name":"a",".anonymous":0,".index":0,"key":"k"}}}"#,
+            r#"{"values":{"a":{".type":"wifi-iface",".name":"a",".anonymous":0,".index":0,"network":"lan","key":"k"}}}"#,
         );
         let inv = survey(&[("wireless".to_owned(), lone)]).expect("surveys");
         assert!(inv.packages[0].secret_agreement.is_empty());
@@ -594,12 +627,52 @@ mod tests {
         // not turn the check red.
         let unset = pkg_json(
             r#"{"values":{
-                "a":{".type":"wifi-iface",".name":"a",".anonymous":0,".index":0,"key":"k"},
-                "b":{".type":"wifi-iface",".name":"b",".anonymous":0,".index":1,"key":""}
+                "a":{".type":"wifi-iface",".name":"a",".anonymous":0,".index":0,"network":"lan","key":"k"},
+                "b":{".type":"wifi-iface",".name":"b",".anonymous":0,".index":1,"network":"lan","key":""}
             }}"#,
         );
         let inv = survey(&[("wireless".to_owned(), unset)]).expect("surveys");
         assert!(inv.packages[0].secret_agreement.is_empty(), "an absent psk is not a divergence");
+    }
+
+    /// ★ THE FALSE POSITIVE, PINNED. The first cut of this check compared every
+    /// carrier in a package and turned a healthy router `fitToShip: false` the
+    /// first time it met real hardware: a guest network legitimately has its own
+    /// password, and an `OpenVPN` server key is not its client key.
+    #[test]
+    fn a_separate_network_may_hold_a_different_secret() {
+        let body = pkg_json(
+            r#"{"values":{
+                "wifi2g":{".type":"wifi-iface",".name":"wifi2g",".anonymous":0,".index":0,"network":"lan","key":"house"},
+                "wifi5g":{".type":"wifi-iface",".name":"wifi5g",".anonymous":0,".index":1,"network":"lan","key":"house"},
+                "guest2g":{".type":"wifi-iface",".name":"guest2g",".anonymous":0,".index":2,"network":"guest","key":"visitors"},
+                "guest5g":{".type":"wifi-iface",".name":"guest5g",".anonymous":0,".index":3,"network":"guest","key":"visitors"}
+            }}"#,
+        );
+        let inv = survey(&[("wireless".to_owned(), body)]).expect("surveys");
+        let a = &inv.packages[0].secret_agreement;
+        assert_eq!(a.len(), 2, "lan and guest are compared SEPARATELY");
+        assert!(a.iter().all(|x| x.agree), "a guest psk differing from the house psk is CORRECT");
+        assert_eq!(a[0].network, "guest");
+        assert_eq!(a[1].network, "lan");
+    }
+
+    /// A section with no `network` is never compared, which is what keeps an
+    /// `OpenVPN` server key and client key from reading as a disagreement —
+    /// without a special case naming openvpn.
+    #[test]
+    fn carriers_with_no_network_are_never_compared() {
+        let body = pkg_json(
+            r#"{"values":{
+                "sample_server":{".type":"openvpn",".name":"sample_server",".anonymous":0,".index":0,"key":"server.key"},
+                "sample_client":{".type":"openvpn",".name":"sample_client",".anonymous":0,".index":1,"key":"client.key"}
+            }}"#,
+        );
+        let inv = survey(&[("openvpn".to_owned(), body)]).expect("surveys");
+        assert!(
+            inv.packages[0].secret_agreement.is_empty(),
+            "ungrouped carriers must not be compared against each other"
+        );
     }
 
     #[test]

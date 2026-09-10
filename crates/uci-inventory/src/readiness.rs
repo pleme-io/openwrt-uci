@@ -192,7 +192,15 @@ fn secrets_agree(inv: &Inventory) -> Check {
             p.secret_agreement
                 .iter()
                 .filter(|a| !a.agree)
-                .map(move |a| format!("{}.{} across {}", p.name, a.option, a.sections.join("/")))
+                .map(move |a| {
+                    format!(
+                        "{}.{} on network `{}` across {}",
+                        p.name,
+                        a.option,
+                        a.network,
+                        a.sections.join("/")
+                    )
+                })
         })
         .collect();
     Check {
@@ -284,6 +292,7 @@ mod tests {
                     sections: vec![],
                     secret_agreement: vec![crate::inventory::SecretAgreement {
                         option: "key".to_owned(),
+                        network: "lan".to_owned(),
                         sections: vec!["wifi2g".to_owned(), "wifi5g".to_owned()],
                         agree: false,
                     }],
