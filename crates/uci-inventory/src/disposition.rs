@@ -210,6 +210,15 @@ pub const CATALOG: &[(&str, Disposition)] = &[
     ("ucitrack", Disposition::DeviceOwned {
         why: "OpenWrt's own uci-change -> service-reload map; the init system owns it",
     }),
+    // ── Found by roteador-buzios (2026-09-11) ───────────────────────────────
+    // The gate refusing an unclassified package surfaced this one too, and the
+    // cause is again ordinary: opkg keeps the package's pristine `luci` config
+    // beside the live one when the live one has been edited. Measured on the
+    // device, `luci-opkg` is `luci` minus the entries a human added (the theme
+    // list, the language list, the `diag` section) — a backup, not a surface.
+    ("luci-opkg", Disposition::DeviceOwned {
+        why: "opkg's pristine copy of the luci config, written by the package manager",
+    }),
 ];
 
 /// The disposition for `package`, or `None` if the catalog has never seen it.
@@ -306,6 +315,8 @@ mod tests {
             "upgrade", "wan-access", "wireguard", "wireguard_server", "wireless", "zerotier",
             // Added by the second GL-MT6000, 2026-09-09.
             "gl-dns", "luci", "ucitrack",
+            // Added by roteador-buzios, 2026-09-11.
+            "luci-opkg",
         ] {
             assert!(classify(p).is_some(), "unclassified measured package: {p}");
         }
