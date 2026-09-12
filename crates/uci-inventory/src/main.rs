@@ -14,7 +14,7 @@ const USAGE: &str = "\
 uci-inventory — survey an OpenWrt device's UCI surface and derive declared config
 
 USAGE:
-    uci-inventory <survey|values|imports> [--adapter HOST:PORT]
+    uci-inventory <survey|values|imports|ready|cr|renames|fleet> [--adapter HOST:PORT]
 
 SUBCOMMANDS:
     survey     coverage report: what exists, what we manage, why we decline the rest
@@ -23,6 +23,12 @@ SUBCOMMANDS:
     imports    {to, id} import identities for the managed set
     ready      is this router fit to ship? typed checks over the UCI surface,
                each naming the incident that motivated it. Exit 1 if not.
+    fleet <file>...
+               compare N RENDERED manifests to each other: which settings are
+               the same on every router (Constant), differ on all of them
+               (Divergent), or are missing from some (Partial). Needs no
+               device. ★ A Constant is a CANDIDATE for policy, never proof of
+               one — three routers agreed on PasswordAuth=on.
     cr <file>  read back a RENDERED InfrastructureTemplate: --tf emits the
                Terraform body for an executor, otherwise a resource summary.
                Needs no device — it reads what the chart produced.
@@ -37,7 +43,8 @@ OPTIONS:
     --apply                `renames` only: actually perform them. Renaming
                            does not reload netifd or fw4, so the running
                            network is untouched.
-    --yaml                 `values` only: emit YAML instead of JSON.
+    --yaml                 `values`: emit YAML instead of JSON.
+                           `fleet`: also list every constant, not just the count.
     --include-positional   also emit sections addressed as @type[N]. OFF by
                            default: a positional address committed to git keeps
                            resolving after a section is inserted or deleted —
@@ -57,14 +64,22 @@ fn main() -> ExitCode {
         Ok(o) => o,
         Err(code) => return code,
     };
-    let (authority, scope, do_apply, as_yaml, tf_only, positional) =
-        (opts.authority, opts.scope, opts.apply, opts.yaml, opts.tf, opts.positional);
+    let (authority, scope, do_apply, as_yaml, tf_only, positionals) =
+        (opts.authority, opts.scope, opts.apply, opts.yaml, opts.tf, opts.positionals);
 
     // ★ `cr` reads a FILE, so it must not require a device. Connecting first
     // would make judging a render impossible whenever a router is unreachable —
     // exactly when you most want to inspect what was declared.
     if cmd == "cr" {
-        return run_cr(positional.as_deref(), tf_only);
+        return run_cr(positionals.first().map(String::as_str), tf_only);
+    }
+
+    // ★ `fleet` reads FILES for the same reason `cr` does, and more so: it
+    // compares routers that are in different houses on different continents,
+    // so requiring any one of them to be reachable would make the comparison
+    // impossible exactly when the fleet is most worth checking.
+    if cmd == "fleet" {
+        return run_fleet(&positionals, as_yaml);
     }
 
     let adapter = Adapter::new(authority);
@@ -189,6 +204,50 @@ fn run_cr(path: Option<&str>, tf_only: bool) -> ExitCode {
     }
 }
 
+/// `fleet` — compare N rendered routers to each other.
+///
+/// Needs no device, like `cr`. The router NAME shown in the report is the
+/// manifest's file stem, so `sections-roteador-natal.yaml` reports as
+/// `sections-roteador-natal` — readable, and derived from the argument rather
+/// than from a flag nobody would keep in step with the paths.
+fn run_fleet(paths: &[String], as_yaml: bool) -> ExitCode {
+    use uci_inventory::fleet::{self, Fleet, Router};
+
+    let mut routers = Vec::with_capacity(paths.len());
+    for path in paths {
+        let manifest = match std::fs::read_to_string(path) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("cannot read {path}: {e}");
+                return ExitCode::FAILURE;
+            }
+        };
+        let name = std::path::Path::new(path)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(path.as_str())
+            .to_owned();
+        match Router::from_manifest(name, &manifest) {
+            Ok(r) => routers.push(r),
+            Err(e) => {
+                eprintln!("{path}: {e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+
+    let fleet = match Fleet::compare(&routers) {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("{e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let out = if as_yaml { fleet::report_all(&fleet) } else { fleet::report(&fleet) };
+    print!("{}", out.render());
+    ExitCode::SUCCESS
+}
+
 /// Every flag this CLI takes, parsed once.
 ///
 /// Lifted out of `main` so the entry point stays readable: argument parsing and
@@ -199,7 +258,13 @@ struct Opts {
     apply: bool,
     yaml: bool,
     tf: bool,
-    positional: Option<String>,
+    /// Free arguments, in order.
+    ///
+    /// A LIST rather than one slot: `fleet` compares N routers, and the single
+    /// slot silently kept only the LAST path — so `fleet a.yaml b.yaml c.yaml`
+    /// would have compared one router against nothing and been refused as
+    /// TooFewRouters, which reads as a bad fleet rather than a dropped argument.
+    positionals: Vec<String>,
 }
 
 fn parse_flags(args: &[String]) -> Result<Opts, ExitCode> {
@@ -209,7 +274,7 @@ fn parse_flags(args: &[String]) -> Result<Opts, ExitCode> {
         apply: false,
         yaml: false,
         tf: false,
-        positional: None,
+        positionals: Vec::new(),
     };
     let mut i = 0;
     while i < args.len() {
@@ -240,7 +305,7 @@ fn parse_flags(args: &[String]) -> Result<Opts, ExitCode> {
                 i += 1;
             }
             other if !other.starts_with("--") => {
-                o.positional = Some(other.to_owned());
+                o.positionals.push(other.to_owned());
                 i += 1;
             }
             other => {
