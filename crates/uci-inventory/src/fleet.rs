@@ -374,6 +374,71 @@ pub fn report(fleet: &Fleet) -> Json {
     ])
 }
 
+/// The reviewed fleet-constant set, as a pin file.
+///
+/// ★ AN ARRAY OF EXPLICIT FIELDS, never a map keyed `"config.section.option"`.
+/// The flat-key form is what a reader reaches for and it cannot be parsed back:
+/// splitting on `.` is ambiguous the moment any segment contains one, and the
+/// failure is silent — a mis-split yields a pin naming a triple that no router
+/// declares, which `breaches` then reports as `Vanished`. A gate that invents
+/// breaches from its own file format is worse than no gate.
+///
+/// `report_all`'s `constants` map keeps the flat form deliberately: it is for a
+/// human to read, and nothing parses it back.
+#[must_use]
+pub fn pin_file(fleet: &Fleet) -> Json {
+    Json::Arr(
+        fleet
+            .of(Agreement::Constant)
+            .into_iter()
+            .filter_map(|f| {
+                f.constant_value().map(|v| {
+                    Json::obj([
+                        ("config", Json::str(&f.config)),
+                        ("section", Json::str(&f.section)),
+                        ("option", Json::str(&f.option)),
+                        ("value", Json::str(v)),
+                    ])
+                })
+            })
+            .collect(),
+    )
+}
+
+/// Read a pin file back.
+///
+/// # Errors
+///
+/// A message naming what was wrong, never a partial pin: a pin file that loses
+/// entries silently would shrink the gate's coverage while still passing.
+pub fn read_pin(text: &str) -> Result<BTreeMap<(String, String, String), String>, String> {
+    let doc = ubus_facade::json::parse(text.trim()).map_err(|e| format!("{e:?}"))?;
+    let Json::Arr(items) = doc else {
+        return Err("a pin file is an ARRAY of {config, section, option, value}".to_owned());
+    };
+    let mut out = BTreeMap::new();
+    for (i, item) in items.iter().enumerate() {
+        let Json::Obj(fields) = item else {
+            return Err(format!("pin[{i}] is not an object"));
+        };
+        let get = |k: &str| -> Option<String> {
+            fields.iter().find(|(n, _)| n == k).and_then(|(_, v)| match v {
+                Json::Str(s) => Some(s.clone()),
+                _ => None,
+            })
+        };
+        let (Some(c), Some(s), Some(o), Some(v)) =
+            (get("config"), get("section"), get("option"), get("value"))
+        else {
+            return Err(format!(
+                "pin[{i}] needs all four of config, section, option, value as strings"
+            ));
+        };
+        out.insert((c, s, o), v);
+    }
+    Ok(out)
+}
+
 /// The comparison as JSON, including every constant.
 #[must_use]
 pub fn report_all(fleet: &Fleet) -> Json {
@@ -584,5 +649,51 @@ mod tests {
         let b = router("b", body());
         let fleet = Fleet::compare(&[a, b]).expect("compares");
         assert_eq!(fleet.findings.len(), 2);
+    }
+
+    #[test]
+    fn a_pin_file_round_trips_through_its_own_reader() {
+        // ★ THE ANTI-VACUITY CHECK ON THE GATE ITSELF. A pin file that cannot
+        // be read back produces a gate that reports breaches invented by its
+        // own format. Emit, read, and compare against the fleet it came from.
+        let a = router(
+            "a",
+            vec![sect("s", "system", "sys", &[("zone", "UTC"), ("n", "1")])],
+        );
+        let b = router(
+            "b",
+            vec![sect("s", "system", "sys", &[("zone", "UTC"), ("n", "1")])],
+        );
+        let fleet = Fleet::compare(&[a, b]).expect("compares");
+        let text = pin_file(&fleet).render();
+        let pinned = read_pin(&text).expect("reads back");
+        assert_eq!(pinned.len(), 2);
+        assert!(fleet.breaches(&pinned).is_empty());
+    }
+
+    #[test]
+    fn a_value_containing_a_dot_survives_the_round_trip() {
+        // The case the flat "config.section.option" key form loses. Real
+        // instance: chrony's `threshold = "1.0"` and system `compat_version`.
+        let body = || vec![sect("s", "chrony", "makestep_0", &[("threshold", "1.0")])];
+        let fleet = Fleet::compare(&[router("a", body()), router("b", body())]).expect("ok");
+        let pinned = read_pin(&pin_file(&fleet).render()).expect("reads back");
+        assert_eq!(
+            pinned.get(&(
+                "chrony".to_owned(),
+                "makestep_0".to_owned(),
+                "threshold".to_owned()
+            )),
+            Some(&"1.0".to_owned())
+        );
+    }
+
+    #[test]
+    fn a_malformed_pin_is_refused_rather_than_silently_shortened() {
+        // A pin file that dropped entries would shrink the gate's coverage
+        // while still passing — the gate going quietly vacuous.
+        assert!(read_pin("{}").is_err());
+        assert!(read_pin(r#"[{"config":"a"}]"#).is_err());
+        assert!(read_pin("not json").is_err());
     }
 }

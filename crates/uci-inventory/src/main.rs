@@ -43,6 +43,12 @@ OPTIONS:
     --apply                `renames` only: actually perform them. Renaming
                            does not reload netifd or fw4, so the running
                            network is untouched.
+    --pin FILE             `fleet` only: enforce a reviewed constant set.
+                           Exit 1 naming every constant that no longer holds.
+                           An EMPTY pin file is refused, not passed.
+    --emit-pin             `fleet` only: write the pin file for review.
+                           ★ Review it before committing — a constant is not
+                           the same as a policy.
     --yaml                 `values`: emit YAML instead of JSON.
                            `fleet`: also list every constant, not just the count.
     --include-positional   also emit sections addressed as @type[N]. OFF by
@@ -64,8 +70,9 @@ fn main() -> ExitCode {
         Ok(o) => o,
         Err(code) => return code,
     };
-    let (authority, scope, do_apply, as_yaml, tf_only, positionals) =
-        (opts.authority, opts.scope, opts.apply, opts.yaml, opts.tf, opts.positionals);
+    let (authority, scope, do_apply, as_yaml, tf_only) =
+        (opts.authority, opts.scope, opts.apply, opts.yaml, opts.tf);
+    let (pin, emit_pin, positionals) = (opts.pin, opts.emit_pin, opts.positionals);
 
     // ★ `cr` reads a FILE, so it must not require a device. Connecting first
     // would make judging a render impossible whenever a router is unreachable —
@@ -79,7 +86,7 @@ fn main() -> ExitCode {
     // so requiring any one of them to be reachable would make the comparison
     // impossible exactly when the fleet is most worth checking.
     if cmd == "fleet" {
-        return run_fleet(&positionals, as_yaml);
+        return run_fleet(&positionals, as_yaml, pin.as_deref(), emit_pin);
     }
 
     let adapter = Adapter::new(authority);
@@ -210,7 +217,7 @@ fn run_cr(path: Option<&str>, tf_only: bool) -> ExitCode {
 /// manifest's file stem, so `sections-roteador-natal.yaml` reports as
 /// `sections-roteador-natal` — readable, and derived from the argument rather
 /// than from a flag nobody would keep in step with the paths.
-fn run_fleet(paths: &[String], as_yaml: bool) -> ExitCode {
+fn run_fleet(paths: &[String], as_yaml: bool, pin: Option<&str>, emit_pin: bool) -> ExitCode {
     use uci_inventory::fleet::{self, Fleet, Router};
 
     let mut routers = Vec::with_capacity(paths.len());
@@ -243,6 +250,54 @@ fn run_fleet(paths: &[String], as_yaml: bool) -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    if emit_pin {
+        print!("{}", fleet::pin_file(&fleet).render());
+        return ExitCode::SUCCESS;
+    }
+
+    // ★ THE GATE. Exit 1 on a breach, so this is usable as a CI step rather
+    // than a report somebody has to read. A breach names the pinned value AND
+    // what each router says now — "it changed" without the values sends the
+    // reader back to the renders to find out what.
+    if let Some(path) = pin {
+        let text = match std::fs::read_to_string(path) {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("cannot read pin {path}: {e}");
+                return ExitCode::FAILURE;
+            }
+        };
+        let pinned = match fleet::read_pin(&text) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("{path}: {e}");
+                return ExitCode::FAILURE;
+            }
+        };
+        // ★ ANTI-VACUITY. An empty pin file passes every check while checking
+        // nothing, and reads in CI exactly like a fleet in perfect agreement.
+        if pinned.is_empty() {
+            eprintln!(
+                "pin {path} is EMPTY — refusing, because an empty pin passes while \
+                 asserting nothing and reads as a fleet that agrees on everything"
+            );
+            return ExitCode::FAILURE;
+        }
+        let breaches = fleet.breaches(&pinned);
+        if breaches.is_empty() {
+            println!("fleet holds: {} pinned constants, {} routers", pinned.len(), fleet.routers.len());
+            return ExitCode::SUCCESS;
+        }
+        eprintln!("{} of {} pinned constants no longer hold:", breaches.len(), pinned.len());
+        for b in &breaches {
+            eprintln!("  {}.{}.{} [{:?}] pinned {:?}", b.config, b.section, b.option, b.kind, b.want);
+            for (r, v) in &b.got {
+                eprintln!("      {r:<26} {v}");
+            }
+        }
+        return ExitCode::FAILURE;
+    }
+
     let out = if as_yaml { fleet::report_all(&fleet) } else { fleet::report(&fleet) };
     print!("{}", out.render());
     ExitCode::SUCCESS
@@ -258,6 +313,10 @@ struct Opts {
     apply: bool,
     yaml: bool,
     tf: bool,
+    /// `fleet --pin FILE`: the reviewed constant set to enforce.
+    pin: Option<String>,
+    /// `fleet --emit-pin`: write the pin file instead of the report.
+    emit_pin: bool,
     /// Free arguments, in order.
     ///
     /// A LIST rather than one slot: `fleet` compares N routers, and the single
@@ -274,6 +333,8 @@ fn parse_flags(args: &[String]) -> Result<Opts, ExitCode> {
         apply: false,
         yaml: false,
         tf: false,
+        pin: None,
+        emit_pin: false,
         positionals: Vec::new(),
     };
     let mut i = 0;
@@ -298,6 +359,18 @@ fn parse_flags(args: &[String]) -> Result<Opts, ExitCode> {
             }
             "--tf" => {
                 o.tf = true;
+                i += 1;
+            }
+            "--pin" => {
+                let Some(v) = args.get(i + 1) else {
+                    eprintln!("--pin needs a path to a pin file");
+                    return Err(ExitCode::FAILURE);
+                };
+                o.pin = Some(v.clone());
+                i += 2;
+            }
+            "--emit-pin" => {
+                o.emit_pin = true;
                 i += 1;
             }
             "--include-positional" => {
