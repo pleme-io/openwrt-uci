@@ -65,10 +65,13 @@ impl Router {
         for (_addr, body) in rendered::sections(manifest)? {
             let Json::Obj(fields) = &body else { continue };
             let field = |k: &str| -> Option<String> {
-                fields.iter().find(|(n, _)| n == k).and_then(|(_, v)| match v {
-                    Json::Str(s) => Some(s.clone()),
-                    _ => None,
-                })
+                fields
+                    .iter()
+                    .find(|(n, _)| n == k)
+                    .and_then(|(_, v)| match v {
+                        Json::Str(s) => Some(s.clone()),
+                        _ => None,
+                    })
             };
             // ★ Identity is the PAIR (config, section) — a UCI fact, not a
             // convention. The terraform ADDRESS is not a substitute: it is a
@@ -81,15 +84,15 @@ impl Router {
             if let Some(Json::Obj(opts)) = values {
                 for (opt, val) in opts {
                     if let Json::Str(s) = val {
-                        settings.insert(
-                            (config.clone(), section.clone(), opt.clone()),
-                            s.clone(),
-                        );
+                        settings.insert((config.clone(), section.clone(), opt.clone()), s.clone());
                     }
                 }
             }
         }
-        Ok(Self { name: name.into(), settings })
+        Ok(Self {
+            name: name.into(),
+            settings,
+        })
     }
 
     /// How many settings this router declares.
@@ -261,9 +264,10 @@ impl Fleet {
     pub fn breaches(&self, pinned: &BTreeMap<(String, String, String), String>) -> Vec<Breach> {
         let mut out = Vec::new();
         for (key, want) in pinned {
-            let found = self.findings.iter().find(|f| {
-                f.config == key.0 && f.section == key.1 && f.option == key.2
-            });
+            let found = self
+                .findings
+                .iter()
+                .find(|f| f.config == key.0 && f.section == key.1 && f.option == key.2);
             match found {
                 None => out.push(Breach {
                     config: key.0.clone(),
@@ -422,10 +426,13 @@ pub fn read_pin(text: &str) -> Result<BTreeMap<(String, String, String), String>
             return Err(format!("pin[{i}] is not an object"));
         };
         let get = |k: &str| -> Option<String> {
-            fields.iter().find(|(n, _)| n == k).and_then(|(_, v)| match v {
-                Json::Str(s) => Some(s.clone()),
-                _ => None,
-            })
+            fields
+                .iter()
+                .find(|(n, _)| n == k)
+                .and_then(|(_, v)| match v {
+                    Json::Str(s) => Some(s.clone()),
+                    _ => None,
+                })
         };
         let (Some(c), Some(s), Some(o), Some(v)) =
             (get("config"), get("section"), get("option"), get("value"))
@@ -450,8 +457,12 @@ pub fn report_all(fleet: &Fleet) -> Json {
             .of(Agreement::Constant)
             .into_iter()
             .filter_map(|f| {
-                f.constant_value()
-                    .map(|v| (format!("{}.{}.{}", f.config, f.section, f.option), Json::str(v)))
+                f.constant_value().map(|v| {
+                    (
+                        format!("{}.{}.{}", f.config, f.section, f.option),
+                        Json::str(v),
+                    )
+                })
             })
             .collect(),
     );
@@ -488,12 +499,7 @@ mod tests {
         out
     }
 
-    fn sect(
-        addr: &str,
-        config: &str,
-        section: &str,
-        opts: &[(&str, &str)],
-    ) -> (String, Json) {
+    fn sect(addr: &str, config: &str, section: &str, opts: &[(&str, &str)]) -> (String, Json) {
         (
             addr.to_owned(),
             Json::obj([
@@ -522,7 +528,12 @@ mod tests {
         );
         let b = router(
             "b",
-            vec![sect("s", "system", "sys", &[("zone", "UTC"), ("host", "b")])],
+            vec![sect(
+                "s",
+                "system",
+                "sys",
+                &[("zone", "UTC"), ("host", "b")],
+            )],
         );
         let fleet = Fleet::compare(&[a, b]).expect("compares");
 
@@ -564,7 +575,10 @@ mod tests {
         // A failed render would otherwise read as a fleet that agrees on
         // nothing, and the reader would go looking for drift that is not there.
         let a = router("a", vec![sect("s", "system", "sys", &[("zone", "UTC")])]);
-        let empty = Router { name: "b".to_owned(), settings: BTreeMap::new() };
+        let empty = Router {
+            name: "b".to_owned(),
+            settings: BTreeMap::new(),
+        };
         assert_eq!(
             Fleet::compare(&[a, empty]).err(),
             Some(FleetError::EmptyRouter("b".to_owned()))
@@ -574,9 +588,7 @@ mod tests {
     fn pin(items: &[(&str, &str, &str, &str)]) -> BTreeMap<(String, String, String), String> {
         items
             .iter()
-            .map(|(c, s, o, v)| {
-                ((c.to_string(), s.to_string(), o.to_string()), v.to_string())
-            })
+            .map(|(c, s, o, v)| ((c.to_string(), s.to_string(), o.to_string()), v.to_string()))
             .collect()
     }
 
@@ -585,9 +597,11 @@ mod tests {
         let a = router("a", vec![sect("s", "system", "sys", &[("zone", "UTC")])]);
         let b = router("b", vec![sect("s", "system", "sys", &[("zone", "UTC")])]);
         let fleet = Fleet::compare(&[a, b]).expect("compares");
-        assert!(fleet
-            .breaches(&pin(&[("system", "sys", "zone", "UTC")]))
-            .is_empty());
+        assert!(
+            fleet
+                .breaches(&pin(&[("system", "sys", "zone", "UTC")]))
+                .is_empty()
+        );
     }
 
     #[test]
@@ -595,8 +609,14 @@ mod tests {
         // ★ THE CASE A CLASS-ONLY GATE MISSES. Both routers moved together, so
         // the option is still Constant — a gate asking only "is it constant?"
         // would pass a fleet-wide policy change in silence.
-        let a = router("a", vec![sect("s", "dropbear", "main", &[("PasswordAuth", "on")])]);
-        let b = router("b", vec![sect("s", "dropbear", "main", &[("PasswordAuth", "on")])]);
+        let a = router(
+            "a",
+            vec![sect("s", "dropbear", "main", &[("PasswordAuth", "on")])],
+        );
+        let b = router(
+            "b",
+            vec![sect("s", "dropbear", "main", &[("PasswordAuth", "on")])],
+        );
         let fleet = Fleet::compare(&[a, b]).expect("compares");
         let breaches = fleet.breaches(&pin(&[("dropbear", "main", "PasswordAuth", "off")]));
         assert_eq!(breaches.len(), 1);
@@ -615,10 +635,10 @@ mod tests {
         let b = router("b", vec![sect("s", "system", "sys", &[("a", "2")])]);
         let fleet = Fleet::compare(&[a, b]).expect("compares");
         let breaches = fleet.breaches(&pin(&[
-            ("system", "sys", "a", "1"),  // now divergent
-            ("system", "sys", "b", "1"),  // b stopped declaring it
-            ("network", "lan", "c", "1"), // only a has it
-            ("gone", "gone", "gone", "1"),// nobody has it
+            ("system", "sys", "a", "1"),   // now divergent
+            ("system", "sys", "b", "1"),   // b stopped declaring it
+            ("network", "lan", "c", "1"),  // only a has it
+            ("gone", "gone", "gone", "1"), // nobody has it
         ]));
         let kind = |c: &str| {
             breaches

@@ -65,7 +65,17 @@ use std::collections::BTreeSet;
 /// firewall rules and zones. The rest are the fields that distinguish sections
 /// of a type from each other, measured on the device.
 const NAMING_OPTIONS: &[&str] = &[
-    "name", "device", "interface", "target", "path", "id", "src", "dest", "ip", "proto", "port",
+    "name",
+    "device",
+    "interface",
+    "target",
+    "path",
+    "id",
+    "src",
+    "dest",
+    "ip",
+    "proto",
+    "port",
 ];
 
 /// A proposed rename.
@@ -128,7 +138,11 @@ pub fn propose(pkg: &Package) -> Vec<Rename> {
 
     let mut out = Vec::new();
     for s in &pkg.sections {
-        let SectionAddr::Anonymous { section_type, type_index } = &s.addr else {
+        let SectionAddr::Anonymous {
+            section_type,
+            type_index,
+        } = &s.addr
+        else {
             continue;
         };
         let (base, derived_from) = NAMING_OPTIONS
@@ -139,15 +153,15 @@ pub fn propose(pkg: &Package) -> Vec<Rename> {
                 if sl.is_empty() {
                     return None;
                 }
-                Some((
-                    format!("{}_{}", slug(section_type), sl),
-                    format!("{k}={v}"),
-                ))
+                Some((format!("{}_{}", slug(section_type), sl), format!("{k}={v}")))
             })
             .unwrap_or_else(|| {
                 (
                     format!("{}_{}", slug(section_type), type_index),
-                    format!("position (no naming option among {})", NAMING_OPTIONS.join("/")),
+                    format!(
+                        "position (no naming option among {})",
+                        NAMING_OPTIONS.join("/")
+                    ),
                 )
             });
 
@@ -279,10 +293,16 @@ mod tests {
 
     fn anon(t: &str, i: usize, opts: &[(&str, &str)]) -> Section {
         Section {
-            addr: SectionAddr::Anonymous { section_type: t.to_owned(), type_index: i },
+            addr: SectionAddr::Anonymous {
+                section_type: t.to_owned(),
+                type_index: i,
+            },
             internal_name: format!("cfg{i:06x}"),
             section_type: t.to_owned(),
-            options: opts.iter().map(|(k, v)| ((*k).to_owned(), (*v).to_owned())).collect(),
+            options: opts
+                .iter()
+                .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+                .collect(),
             secret_options: vec![],
         }
     }
@@ -326,8 +346,16 @@ mod tests {
         // Measured shape: two `domain` sections share a name and differ by ip.
         // The second must say WHICH it is, not merely that it is the second.
         let p = pkg(vec![
-            anon("domain", 0, &[("name", "console.gl-inet.com"), ("ip", "10.0.0.1")]),
-            anon("domain", 1, &[("name", "console.gl-inet.com"), ("ip", "192.168.8.1")]),
+            anon(
+                "domain",
+                0,
+                &[("name", "console.gl-inet.com"), ("ip", "10.0.0.1")],
+            ),
+            anon(
+                "domain",
+                1,
+                &[("name", "console.gl-inet.com"), ("ip", "192.168.8.1")],
+            ),
         ]);
         let r = propose(&p);
         assert_eq!(r[0].to, "domain_console_gl_inet_com");
@@ -385,7 +413,10 @@ mod tests {
         let r = propose(&p);
         assert_eq!(r[0].from, "@rule[0]", "display address");
         assert_eq!(r[0].internal, "cfg000000", "the address the call must use");
-        assert_ne!(r[0].from, r[0].internal, "conflating these is the silent no-op");
+        assert_ne!(
+            r[0].from, r[0].internal,
+            "conflating these is the silent no-op"
+        );
     }
 
     #[test]

@@ -29,26 +29,37 @@
 //! check reasons about equality, so the fixture must preserve equality and
 //! nothing else about the value.
 
-use ubus_facade::json::{parse, Json};
-use uci_inventory::inventory::{survey, Inventory};
-use uci_inventory::readiness::{judge, ready, Verdict};
+use ubus_facade::json::{Json, parse};
+use uci_inventory::inventory::{Inventory, survey};
+use uci_inventory::readiness::{Verdict, judge, ready};
 
 fn load(name: &str) -> Inventory {
-    let raw = std::fs::read_to_string(format!("{}/tests/fixtures/{name}.json", env!("CARGO_MANIFEST_DIR")))
-        .expect("fixture readable");
+    let raw = std::fs::read_to_string(format!(
+        "{}/tests/fixtures/{name}.json",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .expect("fixture readable");
     let doc = parse(&raw).expect("fixture parses");
-    let Json::Obj(top) = &doc else { panic!("fixture is not an object") };
+    let Json::Obj(top) = &doc else {
+        panic!("fixture is not an object")
+    };
     let packages = top
         .iter()
         .find(|(k, _)| k == "packages")
         .map(|(_, v)| v)
         .expect("fixture has `packages`");
-    let Json::Arr(entries) = packages else { panic!("`packages` is not an array") };
+    let Json::Arr(entries) = packages else {
+        panic!("`packages` is not an array")
+    };
     let pairs: Vec<(String, Json)> = entries
         .iter()
         .map(|e| {
-            let Json::Arr(pair) = e else { panic!("entry is not a [name, body] pair") };
-            let Json::Str(n) = &pair[0] else { panic!("package name is not a string") };
+            let Json::Arr(pair) = e else {
+                panic!("entry is not a [name, body] pair")
+            };
+            let Json::Str(n) = &pair[0] else {
+                panic!("package name is not a string")
+            };
             (n.clone(), pair[1].clone())
         })
         .collect();
@@ -62,7 +73,11 @@ fn load(name: &str) -> Inventory {
 fn both_real_devices_survey_without_refusing() {
     for d in ["repetidor-buzios", "roteador-buzios"] {
         let inv = load(d);
-        assert!(inv.packages.len() > 40, "{d}: surveyed only {} packages", inv.packages.len());
+        assert!(
+            inv.packages.len() > 40,
+            "{d}: surveyed only {} packages",
+            inv.packages.len()
+        );
     }
 }
 
@@ -80,7 +95,10 @@ fn both_real_devices_are_fit_to_ship() {
             })
             .collect();
         assert!(failed.is_empty(), "{d} is not fit to ship: {failed:#?}");
-        assert!(ready(&checks), "{d}: ready() disagrees with the per-check verdicts");
+        assert!(
+            ready(&checks),
+            "{d}: ready() disagrees with the per-check verdicts"
+        );
     }
 }
 
@@ -94,9 +112,19 @@ fn a_guest_network_is_not_a_disagreement() {
         .iter()
         .find(|p| p.name == "wireless")
         .expect("a router has a wireless package");
-    let nets: Vec<&str> = wireless.secret_agreement.iter().map(|a| a.network.as_str()).collect();
-    assert!(nets.contains(&"lan"), "the house network must be compared, got {nets:?}");
-    assert!(nets.contains(&"guest"), "the guest network must be compared SEPARATELY, got {nets:?}");
+    let nets: Vec<&str> = wireless
+        .secret_agreement
+        .iter()
+        .map(|a| a.network.as_str())
+        .collect();
+    assert!(
+        nets.contains(&"lan"),
+        "the house network must be compared, got {nets:?}"
+    );
+    assert!(
+        nets.contains(&"guest"),
+        "the guest network must be compared SEPARATELY, got {nets:?}"
+    );
     assert!(
         wireless.secret_agreement.iter().all(|a| a.agree),
         "a healthy router disagrees with itself: {:?}",
@@ -118,7 +146,11 @@ fn diverging_one_band_of_the_real_device_turns_it_red() {
     // Only the 5 GHz band's key moves. Every other byte of the device stands.
     let doc = parse(&raw).expect("parses");
     let Json::Obj(top) = &doc else { panic!() };
-    let Json::Arr(entries) = top.iter().find(|(k, _)| k == "packages").map(|(_, v)| v).unwrap()
+    let Json::Arr(entries) = top
+        .iter()
+        .find(|(k, _)| k == "packages")
+        .map(|(_, v)| v)
+        .unwrap()
     else {
         panic!()
     };
@@ -134,7 +166,10 @@ fn diverging_one_band_of_the_real_device_turns_it_red() {
     }
     let inv = survey(&pairs).expect("surveys");
     let checks = judge(&inv, Some(0));
-    let c = checks.iter().find(|c| c.name == "secrets-agree-across-bands").expect("check present");
+    let c = checks
+        .iter()
+        .find(|c| c.name == "secrets-agree-across-bands")
+        .expect("check present");
     assert!(
         matches!(c.verdict, Verdict::Fail(_)),
         "a real device with one band's PSK changed must be caught, got {:?}",

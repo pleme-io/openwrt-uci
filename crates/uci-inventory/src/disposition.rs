@@ -71,6 +71,17 @@ impl Disposition {
         matches!(self, Self::Managed)
     }
 
+    /// Whether this package holds material that must never reach git.
+    ///
+    /// Such a package contributes its provably-non-secret options and nothing
+    /// else — see [`crate::inventory::Inventory::structural_sections`]. It is
+    /// NOT `Managed`: we do not own the package, only the fields in it that
+    /// are measurably not material.
+    #[must_use]
+    pub const fn is_secret_bearing(self) -> bool {
+        matches!(self, Self::SecretBearing { .. })
+    }
+
     /// A short tag for reports.
     #[must_use]
     pub const fn tag(self) -> &'static str {
@@ -111,13 +122,48 @@ pub const CATALOG: &[(&str, Disposition)] = &[
     ("chrony", MANAGED),   // time sync
     // ── Secret-bearing: we want these, and cannot have them until the secret
     // is materialised out-of-band. The named option is the blocker.
-    ("wireless", Disposition::SecretBearing { why: "wireless.*.key is the wifi PSK" }),
-    ("wireguard", Disposition::SecretBearing { why: "wireguard.*.key holds private keys" }),
-    ("wireguard_server", Disposition::SecretBearing { why: "server private key" }),
-    ("openvpn", Disposition::SecretBearing { why: "embedded keys / auth material" }),
-    ("ovpnclient", Disposition::SecretBearing { why: "embedded keys / auth material" }),
-    ("ovpnserver", Disposition::SecretBearing { why: "embedded keys / auth material" }),
-    ("expressvpn", Disposition::SecretBearing { why: "third-party VPN credentials" }),
+    (
+        "wireless",
+        Disposition::SecretBearing {
+            why: "wireless.*.key is the wifi PSK",
+        },
+    ),
+    (
+        "wireguard",
+        Disposition::SecretBearing {
+            why: "wireguard.*.key holds private keys",
+        },
+    ),
+    (
+        "wireguard_server",
+        Disposition::SecretBearing {
+            why: "server private key",
+        },
+    ),
+    (
+        "openvpn",
+        Disposition::SecretBearing {
+            why: "embedded keys / auth material",
+        },
+    ),
+    (
+        "ovpnclient",
+        Disposition::SecretBearing {
+            why: "embedded keys / auth material",
+        },
+    ),
+    (
+        "ovpnserver",
+        Disposition::SecretBearing {
+            why: "embedded keys / auth material",
+        },
+    ),
+    (
+        "expressvpn",
+        Disposition::SecretBearing {
+            why: "third-party VPN credentials",
+        },
+    ),
     // ★ MEASURED 2026-09-09 and RECLASSIFIED from SecretBearing.
     //
     // The precautionary guess was "may carry an auth key". It does not: the
@@ -134,91 +180,401 @@ pub const CATALOG: &[(&str, Disposition)] = &[
     // `pending-tailscale-login-declared: `tailscale up` is a bootstrap step,
     // like the adapter install — the auth key comes from sops `tailscale/auth-key`.`
     ("tailscale", MANAGED),
-    ("zerotier", Disposition::SecretBearing { why: "network identity / secrets" }),
-    ("tor", Disposition::SecretBearing { why: "onion service keys" }),
-    ("samba4", Disposition::SecretBearing { why: "share credentials" }),
-    ("rpcd", Disposition::SecretBearing { why: "rpcd.*.password is the web-UI login" }),
-    ("uhttpd", Disposition::SecretBearing {
-        why: "uhttpd.*.key names a TLS key; fail-closed until measured as a path, not material",
-    }),
-    ("stubby", Disposition::SecretBearing { why: "TLS auth material for DNS-over-TLS" }),
-    ("glconfig", Disposition::SecretBearing { why: "vendor cloud/device credentials" }),
-    ("gl-cloud", Disposition::SecretBearing { why: "vendor cloud enrolment" }),
-    ("mptun", Disposition::SecretBearing { why: "tunnel credentials" }),
-    ("gl_s2s", Disposition::SecretBearing { why: "site-to-site tunnel credentials" }),
-    ("rtty", Disposition::SecretBearing { why: "remote-terminal enrolment token" }),
+    (
+        "zerotier",
+        Disposition::SecretBearing {
+            why: "network identity / secrets",
+        },
+    ),
+    (
+        "tor",
+        Disposition::SecretBearing {
+            why: "onion service keys",
+        },
+    ),
+    (
+        "samba4",
+        Disposition::SecretBearing {
+            why: "share credentials",
+        },
+    ),
+    (
+        "rpcd",
+        Disposition::SecretBearing {
+            why: "rpcd.*.password is the web-UI login",
+        },
+    ),
+    (
+        "uhttpd",
+        Disposition::SecretBearing {
+            why: "uhttpd.*.key names a TLS key; fail-closed until measured as a path, not material",
+        },
+    ),
+    (
+        "stubby",
+        Disposition::SecretBearing {
+            why: "TLS auth material for DNS-over-TLS",
+        },
+    ),
+    (
+        "glconfig",
+        Disposition::SecretBearing {
+            why: "vendor cloud/device credentials",
+        },
+    ),
+    (
+        "gl-cloud",
+        Disposition::SecretBearing {
+            why: "vendor cloud enrolment",
+        },
+    ),
+    (
+        "mptun",
+        Disposition::SecretBearing {
+            why: "tunnel credentials",
+        },
+    ),
+    (
+        "gl_s2s",
+        Disposition::SecretBearing {
+            why: "site-to-site tunnel credentials",
+        },
+    ),
+    (
+        "rtty",
+        Disposition::SecretBearing {
+            why: "remote-terminal enrolment token",
+        },
+    ),
     // ── Device-owned: the firmware or a vendor daemon writes it.
-    ("mtkhnat", Disposition::DeviceOwned { why: "128 vendor HQoS queue sections; hardware offload table" }),
-    ("mtkhnat_dummy", Disposition::DeviceOwned { why: "vendor offload placeholder" }),
-    ("TRL", Disposition::DeviceOwned { why: "vendor runtime marker" }),
-    ("board_special", Disposition::DeviceOwned { why: "per-board hardware facts, set by firmware" }),
-    ("switch-button", Disposition::DeviceOwned { why: "hardware button mapping" }),
-    ("ubootenv", Disposition::DeviceOwned { why: "bootloader environment" }),
-    ("upgrade", Disposition::DeviceOwned { why: "firmware upgrade bookkeeping" }),
-    ("fstab", Disposition::DeviceOwned { why: "generated from attached storage" }),
-    ("nas", Disposition::DeviceOwned { why: "vendor NAS app state" }),
-    ("gl_nas", Disposition::DeviceOwned { why: "vendor NAS app state" }),
-    ("minidlna", Disposition::DeviceOwned { why: "vendor media app state" }),
-    ("cellular", Disposition::DeviceOwned { why: "modem runtime state" }),
-    ("glmodem", Disposition::DeviceOwned { why: "modem runtime state" }),
-    ("apnprofile", Disposition::DeviceOwned { why: "carrier APN database shipped by firmware" }),
-    ("custom_apn", Disposition::DeviceOwned { why: "carrier APN overrides" }),
-    ("repeater", Disposition::DeviceOwned { why: "repeater runtime association state" }),
-    ("edgerouter", Disposition::DeviceOwned { why: "vendor feature toggle store" }),
-    ("kmwan", Disposition::DeviceOwned { why: "vendor multi-wan daemon state" }),
-    ("qos", Disposition::DeviceOwned { why: "vendor QoS app state" }),
-    ("sqm", Disposition::DeviceOwned { why: "vendor SQM app state" }),
-    ("fullconenat", Disposition::DeviceOwned { why: "vendor NAT feature toggle" }),
-    ("sip_alg", Disposition::DeviceOwned { why: "vendor ALG toggle" }),
-    ("port_forward", Disposition::DeviceOwned { why: "vendor UI mirror of firewall rules" }),
-    ("glforward", Disposition::DeviceOwned { why: "vendor UI mirror of firewall rules" }),
-    ("wan-access", Disposition::DeviceOwned { why: "vendor UI mirror of firewall rules" }),
-    ("route_policy", Disposition::DeviceOwned { why: "vendor policy-routing app state" }),
-    ("glipv6", Disposition::DeviceOwned { why: "vendor IPv6 mode selector" }),
-    ("gl-dns-v2", Disposition::DeviceOwned { why: "vendor DNS app state" }),
-    ("gl_ddns", Disposition::DeviceOwned { why: "vendor DDNS app state" }),
-    ("adguardhome", Disposition::DeviceOwned { why: "third-party app, own config lifecycle" }),
-    ("netifyd", Disposition::DeviceOwned { why: "DPI daemon state" }),
-    ("netify-proc-flow-actions", Disposition::DeviceOwned { why: "DPI daemon state" }),
-    ("gl_dpi", Disposition::DeviceOwned { why: "DPI daemon state" }),
-    ("gl_dpi_qos", Disposition::DeviceOwned { why: "DPI daemon state" }),
-    ("gl_dpi_content_protection", Disposition::DeviceOwned { why: "DPI daemon state" }),
-    ("gl_dpi_flow_statistics", Disposition::DeviceOwned { why: "DPI runtime statistics" }),
-    ("gl_category", Disposition::DeviceOwned { why: "DPI category database" }),
-    ("gl-tertf", Disposition::DeviceOwned { why: "traffic accounting runtime state" }),
-    ("gl_logread", Disposition::DeviceOwned { why: "log daemon state" }),
-    ("gl_led", Disposition::DeviceOwned { why: "vendor LED app state" }),
-    ("gl_timer", Disposition::DeviceOwned { why: "vendor scheduled-reboot app state" }),
-    ("gl_block", Disposition::DeviceOwned { why: "vendor block-device app state" }),
-    ("gl-black_white_list", Disposition::DeviceOwned { why: "vendor MAC filter app state" }),
-    ("parental_control", Disposition::DeviceOwned { why: "vendor parental-control app state" }),
-    ("parental_control_v2", Disposition::DeviceOwned { why: "vendor parental-control app state" }),
-    ("parental_control_apps", Disposition::DeviceOwned { why: "vendor app signature database" }),
-    ("plugins", Disposition::DeviceOwned { why: "vendor plugin registry" }),
-    ("oui-httpd", Disposition::DeviceOwned { why: "vendor web-UI daemon config" }),
-    ("switch", Disposition::DeviceOwned { why: "legacy swconfig hardware map" }),
+    (
+        "mtkhnat",
+        Disposition::DeviceOwned {
+            why: "128 vendor HQoS queue sections; hardware offload table",
+        },
+    ),
+    (
+        "mtkhnat_dummy",
+        Disposition::DeviceOwned {
+            why: "vendor offload placeholder",
+        },
+    ),
+    (
+        "TRL",
+        Disposition::DeviceOwned {
+            why: "vendor runtime marker",
+        },
+    ),
+    (
+        "board_special",
+        Disposition::DeviceOwned {
+            why: "per-board hardware facts, set by firmware",
+        },
+    ),
+    (
+        "switch-button",
+        Disposition::DeviceOwned {
+            why: "hardware button mapping",
+        },
+    ),
+    (
+        "ubootenv",
+        Disposition::DeviceOwned {
+            why: "bootloader environment",
+        },
+    ),
+    (
+        "upgrade",
+        Disposition::DeviceOwned {
+            why: "firmware upgrade bookkeeping",
+        },
+    ),
+    (
+        "fstab",
+        Disposition::DeviceOwned {
+            why: "generated from attached storage",
+        },
+    ),
+    (
+        "nas",
+        Disposition::DeviceOwned {
+            why: "vendor NAS app state",
+        },
+    ),
+    (
+        "gl_nas",
+        Disposition::DeviceOwned {
+            why: "vendor NAS app state",
+        },
+    ),
+    (
+        "minidlna",
+        Disposition::DeviceOwned {
+            why: "vendor media app state",
+        },
+    ),
+    (
+        "cellular",
+        Disposition::DeviceOwned {
+            why: "modem runtime state",
+        },
+    ),
+    (
+        "glmodem",
+        Disposition::DeviceOwned {
+            why: "modem runtime state",
+        },
+    ),
+    (
+        "apnprofile",
+        Disposition::DeviceOwned {
+            why: "carrier APN database shipped by firmware",
+        },
+    ),
+    (
+        "custom_apn",
+        Disposition::DeviceOwned {
+            why: "carrier APN overrides",
+        },
+    ),
+    (
+        "repeater",
+        Disposition::DeviceOwned {
+            why: "repeater runtime association state",
+        },
+    ),
+    (
+        "edgerouter",
+        Disposition::DeviceOwned {
+            why: "vendor feature toggle store",
+        },
+    ),
+    (
+        "kmwan",
+        Disposition::DeviceOwned {
+            why: "vendor multi-wan daemon state",
+        },
+    ),
+    (
+        "qos",
+        Disposition::DeviceOwned {
+            why: "vendor QoS app state",
+        },
+    ),
+    (
+        "sqm",
+        Disposition::DeviceOwned {
+            why: "vendor SQM app state",
+        },
+    ),
+    (
+        "fullconenat",
+        Disposition::DeviceOwned {
+            why: "vendor NAT feature toggle",
+        },
+    ),
+    (
+        "sip_alg",
+        Disposition::DeviceOwned {
+            why: "vendor ALG toggle",
+        },
+    ),
+    (
+        "port_forward",
+        Disposition::DeviceOwned {
+            why: "vendor UI mirror of firewall rules",
+        },
+    ),
+    (
+        "glforward",
+        Disposition::DeviceOwned {
+            why: "vendor UI mirror of firewall rules",
+        },
+    ),
+    (
+        "wan-access",
+        Disposition::DeviceOwned {
+            why: "vendor UI mirror of firewall rules",
+        },
+    ),
+    (
+        "route_policy",
+        Disposition::DeviceOwned {
+            why: "vendor policy-routing app state",
+        },
+    ),
+    (
+        "glipv6",
+        Disposition::DeviceOwned {
+            why: "vendor IPv6 mode selector",
+        },
+    ),
+    (
+        "gl-dns-v2",
+        Disposition::DeviceOwned {
+            why: "vendor DNS app state",
+        },
+    ),
+    (
+        "gl_ddns",
+        Disposition::DeviceOwned {
+            why: "vendor DDNS app state",
+        },
+    ),
+    (
+        "adguardhome",
+        Disposition::DeviceOwned {
+            why: "third-party app, own config lifecycle",
+        },
+    ),
+    (
+        "netifyd",
+        Disposition::DeviceOwned {
+            why: "DPI daemon state",
+        },
+    ),
+    (
+        "netify-proc-flow-actions",
+        Disposition::DeviceOwned {
+            why: "DPI daemon state",
+        },
+    ),
+    (
+        "gl_dpi",
+        Disposition::DeviceOwned {
+            why: "DPI daemon state",
+        },
+    ),
+    (
+        "gl_dpi_qos",
+        Disposition::DeviceOwned {
+            why: "DPI daemon state",
+        },
+    ),
+    (
+        "gl_dpi_content_protection",
+        Disposition::DeviceOwned {
+            why: "DPI daemon state",
+        },
+    ),
+    (
+        "gl_dpi_flow_statistics",
+        Disposition::DeviceOwned {
+            why: "DPI runtime statistics",
+        },
+    ),
+    (
+        "gl_category",
+        Disposition::DeviceOwned {
+            why: "DPI category database",
+        },
+    ),
+    (
+        "gl-tertf",
+        Disposition::DeviceOwned {
+            why: "traffic accounting runtime state",
+        },
+    ),
+    (
+        "gl_logread",
+        Disposition::DeviceOwned {
+            why: "log daemon state",
+        },
+    ),
+    (
+        "gl_led",
+        Disposition::DeviceOwned {
+            why: "vendor LED app state",
+        },
+    ),
+    (
+        "gl_timer",
+        Disposition::DeviceOwned {
+            why: "vendor scheduled-reboot app state",
+        },
+    ),
+    (
+        "gl_block",
+        Disposition::DeviceOwned {
+            why: "vendor block-device app state",
+        },
+    ),
+    (
+        "gl-black_white_list",
+        Disposition::DeviceOwned {
+            why: "vendor MAC filter app state",
+        },
+    ),
+    (
+        "parental_control",
+        Disposition::DeviceOwned {
+            why: "vendor parental-control app state",
+        },
+    ),
+    (
+        "parental_control_v2",
+        Disposition::DeviceOwned {
+            why: "vendor parental-control app state",
+        },
+    ),
+    (
+        "parental_control_apps",
+        Disposition::DeviceOwned {
+            why: "vendor app signature database",
+        },
+    ),
+    (
+        "plugins",
+        Disposition::DeviceOwned {
+            why: "vendor plugin registry",
+        },
+    ),
+    (
+        "oui-httpd",
+        Disposition::DeviceOwned {
+            why: "vendor web-UI daemon config",
+        },
+    ),
+    (
+        "switch",
+        Disposition::DeviceOwned {
+            why: "legacy swconfig hardware map",
+        },
+    ),
     // ── Found by the SECOND device (2026-09-09) ─────────────────────────────
     // The gate refusing an unclassified package is what surfaced these; the
     // first router carried none of them. Worth noting how ordinary the causes
     // are: a different firmware lineage, and a human opening a web UI.
-    ("gl-dns", Disposition::DeviceOwned {
-        why: "vendor DNS app state; the `-v2` sibling of gl-dns-v2 on other firmware",
-    }),
-    ("luci", Disposition::DeviceOwned {
-        why: "LuCI web-UI preferences — written the moment someone opens LuCI",
-    }),
-    ("ucitrack", Disposition::DeviceOwned {
-        why: "OpenWrt's own uci-change -> service-reload map; the init system owns it",
-    }),
+    (
+        "gl-dns",
+        Disposition::DeviceOwned {
+            why: "vendor DNS app state; the `-v2` sibling of gl-dns-v2 on other firmware",
+        },
+    ),
+    (
+        "luci",
+        Disposition::DeviceOwned {
+            why: "LuCI web-UI preferences — written the moment someone opens LuCI",
+        },
+    ),
+    (
+        "ucitrack",
+        Disposition::DeviceOwned {
+            why: "OpenWrt's own uci-change -> service-reload map; the init system owns it",
+        },
+    ),
     // ── Found by roteador-buzios (2026-09-11) ───────────────────────────────
     // The gate refusing an unclassified package surfaced this one too, and the
     // cause is again ordinary: opkg keeps the package's pristine `luci` config
     // beside the live one when the live one has been edited. Measured on the
     // device, `luci-opkg` is `luci` minus the entries a human added (the theme
     // list, the language list, the `diag` section) — a backup, not a surface.
-    ("luci-opkg", Disposition::DeviceOwned {
-        why: "opkg's pristine copy of the luci config, written by the package manager",
-    }),
+    (
+        "luci-opkg",
+        Disposition::DeviceOwned {
+            why: "opkg's pristine copy of the luci config, written by the package manager",
+        },
+    ),
 ];
 
 /// The disposition for `package`, or `None` if the catalog has never seen it.
@@ -260,7 +616,15 @@ pub const NOT_SECRET: &[&str] = &[
 ];
 
 const SECRET_SUBSTRINGS: &[&str] = &[
-    "key", "password", "passwd", "secret", "token", "psk", "private", "credential", "auth",
+    "key",
+    "password",
+    "passwd",
+    "secret",
+    "token",
+    "psk",
+    "private",
+    "credential",
+    "auth",
 ];
 
 /// Whether an option name must be treated as secret-bearing.
@@ -301,20 +665,83 @@ mod tests {
         // the denominator: if the survey ever finds one of these unclassified,
         // the catalog regressed.
         for p in [
-            "TRL", "adguardhome", "apnprofile", "board_special", "cellular", "chrony",
-            "custom_apn", "dhcp", "dropbear", "edgerouter", "expressvpn", "firewall", "fstab",
-            "fullconenat", "gl-black_white_list", "gl-cloud", "gl-dns-v2", "gl-tertf", "gl_block",
-            "gl_category", "gl_ddns", "gl_dpi", "gl_dpi_content_protection",
-            "gl_dpi_flow_statistics", "gl_dpi_qos", "gl_led", "gl_logread", "gl_nas", "gl_s2s",
-            "gl_timer", "glconfig", "glforward", "glipv6", "glmodem", "kmwan", "minidlna",
-            "mptun", "mtkhnat", "nas", "netify-proc-flow-actions", "netifyd", "network",
-            "openvpn", "oui-httpd", "ovpnclient", "ovpnserver", "parental_control",
-            "parental_control_apps", "parental_control_v2", "plugins", "port_forward", "qos",
-            "repeater", "roteador", "route_policy", "rpcd", "rtty", "samba4", "sip_alg", "sqm",
-            "stubby", "switch-button", "system", "tailscale", "tor", "ubootenv", "uhttpd",
-            "upgrade", "wan-access", "wireguard", "wireguard_server", "wireless", "zerotier",
+            "TRL",
+            "adguardhome",
+            "apnprofile",
+            "board_special",
+            "cellular",
+            "chrony",
+            "custom_apn",
+            "dhcp",
+            "dropbear",
+            "edgerouter",
+            "expressvpn",
+            "firewall",
+            "fstab",
+            "fullconenat",
+            "gl-black_white_list",
+            "gl-cloud",
+            "gl-dns-v2",
+            "gl-tertf",
+            "gl_block",
+            "gl_category",
+            "gl_ddns",
+            "gl_dpi",
+            "gl_dpi_content_protection",
+            "gl_dpi_flow_statistics",
+            "gl_dpi_qos",
+            "gl_led",
+            "gl_logread",
+            "gl_nas",
+            "gl_s2s",
+            "gl_timer",
+            "glconfig",
+            "glforward",
+            "glipv6",
+            "glmodem",
+            "kmwan",
+            "minidlna",
+            "mptun",
+            "mtkhnat",
+            "nas",
+            "netify-proc-flow-actions",
+            "netifyd",
+            "network",
+            "openvpn",
+            "oui-httpd",
+            "ovpnclient",
+            "ovpnserver",
+            "parental_control",
+            "parental_control_apps",
+            "parental_control_v2",
+            "plugins",
+            "port_forward",
+            "qos",
+            "repeater",
+            "roteador",
+            "route_policy",
+            "rpcd",
+            "rtty",
+            "samba4",
+            "sip_alg",
+            "sqm",
+            "stubby",
+            "switch-button",
+            "system",
+            "tailscale",
+            "tor",
+            "ubootenv",
+            "uhttpd",
+            "upgrade",
+            "wan-access",
+            "wireguard",
+            "wireguard_server",
+            "wireless",
+            "zerotier",
             // Added by the second GL-MT6000, 2026-09-09.
-            "gl-dns", "luci", "ucitrack",
+            "gl-dns",
+            "luci",
+            "ucitrack",
             // Added by roteador-buzios, 2026-09-11.
             "luci-opkg",
         ] {

@@ -31,7 +31,7 @@
 //! hash of a short PSK is brute-forceable, so it would leak the secret through
 //! a field that merely looks safe.
 
-use crate::disposition::{classify, option_is_secret, Disposition};
+use crate::disposition::{Disposition, classify, option_is_secret};
 use std::collections::BTreeMap;
 use ubus_facade::json::Json;
 
@@ -84,7 +84,10 @@ pub fn fixture(bodies: &[(String, Json)]) -> Json {
             // An unclassified package is scrubbed WHOLE. `survey` refuses it
             // anyway, but a capture must never be the thing that leaks while
             // someone is still deciding what a new package is.
-            let whole = !matches!(classify(name), Some(Disposition::Managed | Disposition::DeviceOwned { .. }));
+            let whole = !matches!(
+                classify(name),
+                Some(Disposition::Managed | Disposition::DeviceOwned { .. })
+            );
             Json::Arr(vec![Json::str(name), scrub(body, whole, &mut classes)])
         })
         .collect();
@@ -93,7 +96,9 @@ pub fn fixture(bodies: &[(String, Json)]) -> Json {
 
 fn placeholder(value: &str, classes: &mut BTreeMap<String, String>) -> Json {
     let next = classes.len() + 1;
-    let s = classes.entry(value.to_owned()).or_insert_with(|| format!("SECRET-{next}"));
+    let s = classes
+        .entry(value.to_owned())
+        .or_insert_with(|| format!("SECRET-{next}"));
     Json::Str(s.clone())
 }
 
@@ -144,8 +149,14 @@ mod tests {
         );
         let out = fixture(&[("wireguard".to_owned(), b)]);
         let s = rendered(&out);
-        assert!(!s.contains("TOKEN-e9f2ab0f"), "a bearer token survived scrubbing: {s}");
-        assert!(!s.contains("vpn.example"), "whole-package scrubbing must not spare a sibling");
+        assert!(
+            !s.contains("TOKEN-e9f2ab0f"),
+            "a bearer token survived scrubbing: {s}"
+        );
+        assert!(
+            !s.contains("vpn.example"),
+            "whole-package scrubbing must not spare a sibling"
+        );
     }
 
     #[test]
@@ -162,7 +173,8 @@ mod tests {
         assert!(!s.contains("\"same\""), "a psk survived");
         assert!(!s.contains("\"other\""), "a psk survived");
         // The two that agreed must still agree; the third must still differ.
-        let inv = crate::inventory::survey(&[("wireless".to_owned(), reparse(&out))]).expect("surveys");
+        let inv =
+            crate::inventory::survey(&[("wireless".to_owned(), reparse(&out))]).expect("surveys");
         let ag = &inv.packages[0].secret_agreement;
         assert_eq!(ag.len(), 1, "only `lan` has two carriers");
         assert!(ag[0].agree, "equality must survive the scrub");
@@ -176,7 +188,10 @@ mod tests {
         );
         let out = fixture(&[("tailscale".to_owned(), b)]);
         let s = rendered(&out);
-        assert!(s.contains("\"1\""), "`enabled` is structural and must survive");
+        assert!(
+            s.contains("\"1\""),
+            "`enabled` is structural and must survive"
+        );
         assert!(!s.contains("tskey-secret"), "the auth key must not");
     }
 
@@ -187,18 +202,32 @@ mod tests {
         );
         let out = fixture(&[("wireless".to_owned(), b)]);
         let s = rendered(&out);
-        assert!(s.contains("cfg0a1b"), "the internal name is the only rename address there is");
-        assert!(s.contains("Int(3)") || s.contains('3'), "`.index` decides positional identity");
+        assert!(
+            s.contains("cfg0a1b"),
+            "the internal name is the only rename address there is"
+        );
+        assert!(
+            s.contains("Int(3)") || s.contains('3'),
+            "`.index` decides positional identity"
+        );
     }
 
     /// Round-trip a rendered fixture so a test can survey what was written.
     fn reparse(j: &Json) -> Json {
-        let Json::Obj(top) = j else { panic!("not an object") };
-        let Json::Arr(pkgs) = top.iter().find(|(k, _)| k == "packages").map(|(_, v)| v).unwrap()
+        let Json::Obj(top) = j else {
+            panic!("not an object")
+        };
+        let Json::Arr(pkgs) = top
+            .iter()
+            .find(|(k, _)| k == "packages")
+            .map(|(_, v)| v)
+            .unwrap()
         else {
             panic!("no packages")
         };
-        let Json::Arr(pair) = &pkgs[0] else { panic!("not a pair") };
+        let Json::Arr(pair) = &pkgs[0] else {
+            panic!("not a pair")
+        };
         pair[1].clone()
     }
 }

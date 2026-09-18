@@ -328,15 +328,16 @@ fn every_endpoint_named_by_a_resource_spec_exists_in_the_facade() {
 fn unspecified_emits_no_type_constraint() {
     use ubus_facade::catalog::UbusType;
     // It parses...
-    let spec = Catalog::parse(
-        "'network.rrdns' @1b060d29\n\t\"lookup\":{\"port\":\"(unknown)\"}\n",
-    )
-    .expect("`(unknown)` must parse, not refuse");
+    let spec = Catalog::parse("'network.rrdns' @1b060d29\n\t\"lookup\":{\"port\":\"(unknown)\"}\n")
+        .expect("`(unknown)` must parse, not refuse");
     // ...and carries no JSON type.
     assert_eq!(UbusType::Unspecified.json_type(), None);
     let doc = ubus_facade::openapi::build(&spec, "0.0.0").render();
     // The parameter is present...
-    assert!(doc.contains("port"), "the parameter must still be described");
+    assert!(
+        doc.contains("port"),
+        "the parameter must still be described"
+    );
     // ...but nothing claims it is an integer just because it is called `port`.
     let port_region = &doc[doc.find("port").expect("port present")..];
     let window = &port_region[..port_region.len().min(160)];

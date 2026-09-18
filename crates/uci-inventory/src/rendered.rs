@@ -194,7 +194,10 @@ mod tests {
 
     #[test]
     fn refuses_a_manifest_that_is_not_a_render() {
-        assert_eq!(terraform("kind: ConfigMap\n").unwrap_err(), RenderError::NoTemplate);
+        assert_eq!(
+            terraform("kind: ConfigMap\n").unwrap_err(),
+            RenderError::NoTemplate
+        );
     }
 
     #[test]

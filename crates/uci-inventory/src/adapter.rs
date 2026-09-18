@@ -16,7 +16,10 @@ pub enum AdapterError {
     Connect(std::io::Error),
     Io(std::io::Error),
     /// The adapter answered a non-2xx status.
-    Status { code: u16, body: String },
+    Status {
+        code: u16,
+        body: String,
+    },
     /// The body was not the JSON the adapter promises.
     Body(String),
 }
@@ -53,7 +56,9 @@ impl Adapter {
     /// `authority` is `host:port`, e.g. `127.0.0.1:9797`.
     #[must_use]
     pub fn new(authority: impl Into<String>) -> Self {
-        Self { authority: authority.into() }
+        Self {
+            authority: authority.into(),
+        }
     }
 
     /// POST `body` to `path` and parse the answer.
@@ -90,7 +95,10 @@ impl Adapter {
             .and_then(|c| c.parse().ok())
             .ok_or_else(|| AdapterError::Body("no status code in response".to_owned()))?;
         if !(200..300).contains(&code) {
-            return Err(AdapterError::Status { code, body: body_text.trim().to_owned() });
+            return Err(AdapterError::Status {
+                code,
+                body: body_text.trim().to_owned(),
+            });
         }
         ubus_facade::json::parse(body_text.trim())
             .map_err(|e| AdapterError::Body(format!("unparseable body: {e:?}")))
@@ -104,7 +112,9 @@ impl Adapter {
     pub fn packages(&self) -> Result<Vec<String>, AdapterError> {
         let out = self.post("/uci/configs", &Json::obj::<&str>([]))?;
         let Json::Obj(pairs) = &out else {
-            return Err(AdapterError::Body("uci.configs did not answer an object".to_owned()));
+            return Err(AdapterError::Body(
+                "uci.configs did not answer an object".to_owned(),
+            ));
         };
         let arr = pairs
             .iter()

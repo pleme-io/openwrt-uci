@@ -37,7 +37,10 @@ impl SectionAddr {
     pub fn as_uci(&self) -> String {
         match self {
             Self::Named(n) => n.clone(),
-            Self::Anonymous { section_type, type_index } => {
+            Self::Anonymous {
+                section_type,
+                type_index,
+            } => {
                 let mut s = String::from("@");
                 s.push_str(section_type);
                 s.push('[');
@@ -171,7 +174,11 @@ impl core::fmt::Display for SurveyError {
                      unmanaged config.",
                 )
             }
-            Self::ManagedPackageHoldsSecret { package, section, options } => {
+            Self::ManagedPackageHoldsSecret {
+                package,
+                section,
+                options,
+            } => {
                 f.write_str("package ")?;
                 f.write_str(package)?;
                 f.write_str(" is classified `Managed` but ")?;
@@ -232,11 +239,17 @@ fn scalar(j: &Json) -> Option<String> {
 /// # Errors
 ///
 /// [`SurveyError::Malformed`] if `values` is absent or not an object.
-pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Result<Package, SurveyError> {
+pub fn parse_package(
+    name: &str,
+    disposition: Disposition,
+    body: &Json,
+) -> Result<Package, SurveyError> {
     let values = obj(body, "values")
         .ok_or_else(|| SurveyError::Malformed(format!("{name}: no `values`")))?;
     let Json::Obj(entries) = values else {
-        return Err(SurveyError::Malformed(format!("{name}: `values` is not an object")));
+        return Err(SurveyError::Malformed(format!(
+            "{name}: `values` is not an object"
+        )));
     };
 
     // Order by the package-wide `.index` so per-type counting matches file
@@ -295,9 +308,14 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
 
         // `.name` is authoritative; the map key equals it for named sections but
         // relying on the key would break the day it does not.
-        let internal_name = obj(val, ".name").and_then(scalar).unwrap_or_else(|| key.clone());
+        let internal_name = obj(val, ".name")
+            .and_then(scalar)
+            .unwrap_or_else(|| key.clone());
         let addr = if anonymous {
-            SectionAddr::Anonymous { section_type: section_type.clone(), type_index }
+            SectionAddr::Anonymous {
+                section_type: section_type.clone(),
+                type_index,
+            }
         } else {
             SectionAddr::Named(internal_name.clone())
         };
@@ -348,12 +366,23 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
             }
         }
 
-        sections.push(Section { addr, internal_name, section_type, options, secret_options });
+        sections.push(Section {
+            addr,
+            internal_name,
+            section_type,
+            options,
+            secret_options,
+        });
     }
 
     let secret_agreement = agreements(secret_vals);
 
-    Ok(Package { name: name.to_owned(), disposition, sections, secret_agreement })
+    Ok(Package {
+        name: name.to_owned(),
+        disposition,
+        sections,
+        secret_agreement,
+    })
 }
 
 /// Collapse staged secret values into verdicts, consuming them.
@@ -361,7 +390,9 @@ pub fn parse_package(name: &str, disposition: Disposition, body: &Json) -> Resul
 /// Takes the map BY VALUE so the caller cannot keep the secrets after asking
 /// the question — the values are dropped when this returns, and only booleans
 /// and section names survive. See `SecretAgreement` for why no digest is kept.
-fn agreements(secret_vals: BTreeMap<(String, String), Vec<(String, String)>>) -> Vec<SecretAgreement> {
+fn agreements(
+    secret_vals: BTreeMap<(String, String), Vec<(String, String)>>,
+) -> Vec<SecretAgreement> {
     let mut out: Vec<SecretAgreement> = secret_vals
         .into_iter()
         // One carrier cannot disagree with anything.
@@ -436,6 +467,41 @@ impl Inventory {
     /// Sections we declare, as `(package, section)`.
     pub fn managed_sections(&self) -> impl Iterator<Item = (&str, &Section)> {
         self.managed()
+            .flat_map(|p| p.sections.iter().map(move |s| (p.name.as_str(), s)))
+    }
+
+    /// Sections of SECRET-BEARING packages, carrying only their provably
+    /// non-secret options.
+    ///
+    /// ## Why this exists
+    ///
+    /// A secret-bearing package used to contribute nothing at all, so
+    /// `wireless` was unmanageable in its entirety because one option in it is
+    /// a PSK. Every field an operator actually tunes — `channel`, `htmode`,
+    /// `disabled`, `ssid` — is already classified non-secret by
+    /// [`crate::disposition::option_is_secret`], the same authority that
+    /// decides what to scrub. The disposition was simply COARSER than the
+    /// knowledge: field-level on the scrub side, package-level on the emit
+    /// side.
+    ///
+    /// ## Why emitting a partial section is safe
+    ///
+    /// Measured on a live GL-MT6000, 2026-09-18: `uci set` with a `values` map
+    /// MERGES. Setting only `system.@system[0].zonename` left `hostname`
+    /// untouched. So a section that declares only structural options leaves
+    /// every undeclared option — the PSK included — exactly as the device has
+    /// it. The secret is never read, never written, and never travels.
+    ///
+    /// ## Fail-closed, the same as the scrub side
+    ///
+    /// An option is emitted only when it is PROVABLY not secret. An
+    /// unrecognised option is omitted, not guessed at — the NordVPN case
+    /// (`wireguard.<peer>.username` holding a bearer token) is exactly why
+    /// name-matching alone was rejected, and omission cannot leak.
+    pub fn structural_sections(&self) -> impl Iterator<Item = (&str, &Section)> {
+        self.packages
+            .iter()
+            .filter(|p| p.disposition.is_secret_bearing())
             .flat_map(|p| p.sections.iter().map(move |s| (p.name.as_str(), s)))
     }
 
@@ -519,9 +585,8 @@ mod tests {
         // No `.anonymous` at all (an adapter that could not decode INT8) plus a
         // cfg-hex name: treated as anonymous, so it gets a positional address
         // and becomes a rename candidate rather than a fake stable identity.
-        let body = pkg_json(
-            r#"{"values":{"cfg0a1b":{".type":"rule",".name":"cfg0a1b",".index":0}}}"#,
-        );
+        let body =
+            pkg_json(r#"{"values":{"cfg0a1b":{".type":"rule",".name":"cfg0a1b",".index":0}}}"#);
         let p = parse_package("firewall", Disposition::Managed, &body).expect("parses");
         assert_eq!(p.sections[0].addr.as_uci(), "@rule[0]");
         // ...and a genuinely-named section under the same conditions does not.
@@ -545,7 +610,10 @@ mod tests {
             r#"{"values":{"lan":{".type":"interface",".name":"lan",".anonymous":0,".index":0,"proto":"static"}}}"#,
         );
         let p = parse_package("network", Disposition::Managed, &body).expect("parses");
-        assert_eq!(p.sections[0].options.keys().collect::<Vec<_>>(), vec!["proto"]);
+        assert_eq!(
+            p.sections[0].options.keys().collect::<Vec<_>>(),
+            vec!["proto"]
+        );
     }
 
     #[test]
@@ -573,7 +641,10 @@ mod tests {
         );
         let inv = survey(&[("wireguard".to_owned(), body)]).expect("secret pkgs survey fine");
         let s = &inv.packages[0].sections[0];
-        assert!(!s.options.contains_key("key"), "secret value leaked into inventory");
+        assert!(
+            !s.options.contains_key("key"),
+            "secret value leaked into inventory"
+        );
         assert_eq!(s.options["port"], "51820");
         assert_eq!(s.secret_options, vec!["key".to_owned()]);
     }
@@ -594,14 +665,23 @@ mod tests {
         assert_eq!(a[0].option, "key");
         assert_eq!(a[0].network, "lan");
         assert!(!a[0].agree, "divergent PSKs must not read as agreement");
-        assert_eq!(a[0].sections, vec!["wifi2g".to_owned(), "wifi5g".to_owned()]);
+        assert_eq!(
+            a[0].sections,
+            vec!["wifi2g".to_owned(), "wifi5g".to_owned()]
+        );
 
         // ★ THE SECURITY PROPERTY, asserted rather than asserted-in-prose: the
         // verdict exists and NEITHER value is recoverable from anywhere in the
         // inventory — not in options, not in a digest, not in the report.
         let rendered = format!("{inv:?}");
-        assert!(!rendered.contains("same-psk"), "a PSK reached a Debug rendering");
-        assert!(!rendered.contains("DIFFERENT"), "a PSK reached a Debug rendering");
+        assert!(
+            !rendered.contains("same-psk"),
+            "a PSK reached a Debug rendering"
+        );
+        assert!(
+            !rendered.contains("DIFFERENT"),
+            "a PSK reached a Debug rendering"
+        );
     }
 
     #[test]
@@ -632,7 +712,10 @@ mod tests {
             }}"#,
         );
         let inv = survey(&[("wireless".to_owned(), unset)]).expect("surveys");
-        assert!(inv.packages[0].secret_agreement.is_empty(), "an absent psk is not a divergence");
+        assert!(
+            inv.packages[0].secret_agreement.is_empty(),
+            "an absent psk is not a divergence"
+        );
     }
 
     /// ★ THE FALSE POSITIVE, PINNED. The first cut of this check compared every
@@ -652,7 +735,10 @@ mod tests {
         let inv = survey(&[("wireless".to_owned(), body)]).expect("surveys");
         let a = &inv.packages[0].secret_agreement;
         assert_eq!(a.len(), 2, "lan and guest are compared SEPARATELY");
-        assert!(a.iter().all(|x| x.agree), "a guest psk differing from the house psk is CORRECT");
+        assert!(
+            a.iter().all(|x| x.agree),
+            "a guest psk differing from the house psk is CORRECT"
+        );
         assert_eq!(a[0].network, "guest");
         assert_eq!(a[1].network, "lan");
     }
@@ -686,7 +772,9 @@ mod tests {
         .expect_err("must refuse");
         match err {
             // Both, sorted — one run shows the whole gap.
-            SurveyError::Unclassified(p) => assert_eq!(p, vec!["another_new_thing", "brand_new_thing"]),
+            SurveyError::Unclassified(p) => {
+                assert_eq!(p, vec!["another_new_thing", "brand_new_thing"])
+            }
             other => panic!("wrong error: {other:?}"),
         }
     }

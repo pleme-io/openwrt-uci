@@ -197,7 +197,10 @@ fn run_cr(path: Option<&str>, tf_only: bool) -> ExitCode {
             print!(
                 "{}",
                 Json::obj([
-                    ("resources", Json::Int(i64::try_from(s.len()).unwrap_or(i64::MAX))),
+                    (
+                        "resources",
+                        Json::Int(i64::try_from(s.len()).unwrap_or(i64::MAX))
+                    ),
                     ("addresses", Json::Arr(addrs)),
                 ])
                 .render()
@@ -285,12 +288,23 @@ fn run_fleet(paths: &[String], as_yaml: bool, pin: Option<&str>, emit_pin: bool)
         }
         let breaches = fleet.breaches(&pinned);
         if breaches.is_empty() {
-            println!("fleet holds: {} pinned constants, {} routers", pinned.len(), fleet.routers.len());
+            println!(
+                "fleet holds: {} pinned constants, {} routers",
+                pinned.len(),
+                fleet.routers.len()
+            );
             return ExitCode::SUCCESS;
         }
-        eprintln!("{} of {} pinned constants no longer hold:", breaches.len(), pinned.len());
+        eprintln!(
+            "{} of {} pinned constants no longer hold:",
+            breaches.len(),
+            pinned.len()
+        );
         for b in &breaches {
-            eprintln!("  {}.{}.{} [{:?}] pinned {:?}", b.config, b.section, b.option, b.kind, b.want);
+            eprintln!(
+                "  {}.{}.{} [{:?}] pinned {:?}",
+                b.config, b.section, b.option, b.kind, b.want
+            );
             for (r, v) in &b.got {
                 eprintln!("      {r:<26} {v}");
             }
@@ -298,7 +312,11 @@ fn run_fleet(paths: &[String], as_yaml: bool, pin: Option<&str>, emit_pin: bool)
         return ExitCode::FAILURE;
     }
 
-    let out = if as_yaml { fleet::report_all(&fleet) } else { fleet::report(&fleet) };
+    let out = if as_yaml {
+        fleet::report_all(&fleet)
+    } else {
+        fleet::report(&fleet)
+    };
     print!("{}", out.render());
     ExitCode::SUCCESS
 }
@@ -396,46 +414,51 @@ fn parse_flags(args: &[String]) -> Result<Opts, ExitCode> {
 /// Separate from `main` so the entry point stays a dispatcher; the pedantic
 /// line limit has been a fair nudge twice now.
 fn run_ready(adapter: &Adapter, inv: &uci_inventory::inventory::Inventory) -> ExitCode {
-        // uci.changes is a live query, not part of the inventory.
-        let uncommitted = adapter
-            .post("/uci/changes", &Json::obj([("config", Json::str("system"))]))
-            .ok()
-            .and_then(|j| match j {
-                Json::Obj(p) => p.iter().find(|(k, _)| k == "changes").map(|(_, v)| v.clone()),
-                _ => None,
-            })
-            .and_then(|c| match c {
-                Json::Arr(a) => Some(a.len()),
-                _ => None,
-            });
-        let checks = uci_inventory::readiness::judge(inv, uncommitted);
-        let rows: Vec<Json> = checks
-            .iter()
-            .map(|c| {
-                let (v, detail) = match &c.verdict {
-                    uci_inventory::readiness::Verdict::Pass => ("pass", String::new()),
-                    uci_inventory::readiness::Verdict::Fail(m) => ("FAIL", m.clone()),
-                    uci_inventory::readiness::Verdict::Unobservable(m) => {
-                        ("unobservable", (*m).to_owned())
-                    }
-                };
-                Json::obj([
-                    ("check", Json::str(c.name)),
-                    ("verdict", Json::str(v)),
-                    ("detail", Json::str(detail)),
-                    ("because", Json::str(c.because)),
-                ])
-            })
-            .collect();
-        let fit = uci_inventory::readiness::ready(&checks);
-        print!(
-            "{}",
+    // uci.changes is a live query, not part of the inventory.
+    let uncommitted = adapter
+        .post(
+            "/uci/changes",
+            &Json::obj([("config", Json::str("system"))]),
+        )
+        .ok()
+        .and_then(|j| match j {
+            Json::Obj(p) => p
+                .iter()
+                .find(|(k, _)| k == "changes")
+                .map(|(_, v)| v.clone()),
+            _ => None,
+        })
+        .and_then(|c| match c {
+            Json::Arr(a) => Some(a.len()),
+            _ => None,
+        });
+    let checks = uci_inventory::readiness::judge(inv, uncommitted);
+    let rows: Vec<Json> = checks
+        .iter()
+        .map(|c| {
+            let (v, detail) = match &c.verdict {
+                uci_inventory::readiness::Verdict::Pass => ("pass", String::new()),
+                uci_inventory::readiness::Verdict::Fail(m) => ("FAIL", m.clone()),
+                uci_inventory::readiness::Verdict::Unobservable(m) => {
+                    ("unobservable", (*m).to_owned())
+                }
+            };
             Json::obj([
-                ("fitToShip", Json::Bool(fit)),
-                ("checks", Json::Arr(rows)),
+                ("check", Json::str(c.name)),
+                ("verdict", Json::str(v)),
+                ("detail", Json::str(detail)),
+                ("because", Json::str(c.because)),
             ])
-            .render()
-        );
-        if fit { ExitCode::SUCCESS } else { ExitCode::FAILURE }
-    
+        })
+        .collect();
+    let fit = uci_inventory::readiness::ready(&checks);
+    print!(
+        "{}",
+        Json::obj([("fitToShip", Json::Bool(fit)), ("checks", Json::Arr(rows)),]).render()
+    );
+    if fit {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    }
 }

@@ -57,6 +57,59 @@ pub fn helm_values_scoped(inv: &Inventory, scope: Scope) -> Json {
             ])
         })
         .collect();
+    // ── ★ Secret-bearing packages contribute their STRUCTURAL options ─────
+    // Previously they contributed nothing, so `wireless` was unmanageable
+    // whole because one option in it is a PSK — while `channel`, `htmode`,
+    // `disabled` and `ssid` sat right beside it, already classified
+    // non-secret by the same authority that decides what to scrub.
+    //
+    // Safe because `uci set` MERGES (measured on a live GL-MT6000,
+    // 2026-09-18: setting only `system.@system[0].zonename` left `hostname`
+    // untouched), so a section declaring only structural options leaves every
+    // undeclared option — the secret included — exactly as the device has it.
+    //
+    // Fail-closed: an option is emitted only when `option_is_secret` says it
+    // is not secret. An unrecognised option is OMITTED, never guessed at.
+    let mut sections = sections;
+    for (pkg, sec) in inv.structural_sections() {
+        if scope != Scope::IncludePositional && sec.addr.is_anonymous() {
+            continue;
+        }
+        let values: Vec<(String, Json)> = sec
+            .options
+            .iter()
+            // ★ ALLOWLIST, not a denylist. `!option_is_secret(k)` is
+            // fail-OPEN: it emits anything not RECOGNISED as secret, which is
+            // precisely the NordVPN case this crate already measured — a
+            // bearer token in a field called `username` matches no secret
+            // substring. Caught by
+            // `an_unrecognised_option_in_a_secret_package_is_omitted`.
+            //
+            // `STRUCTURAL` is the capture side's existing allowlist of fields
+            // kept verbatim while scrubbing. Reusing it keeps ONE authority
+            // for "measurably not material" rather than minting a second list
+            // that drifts.
+            .filter(|(k, _)| {
+                let lower = k.to_ascii_lowercase();
+                crate::capture::STRUCTURAL.contains(&lower.as_str())
+                    && !crate::disposition::option_is_secret(k)
+            })
+            .map(|(k, v)| (k.clone(), Json::str(v)))
+            .collect();
+        // A section whose every option is secret contributes nothing: an
+        // empty `values` would declare "this section has no options", which
+        // is a claim about the device we have not measured and do not mean.
+        if values.is_empty() {
+            continue;
+        }
+        sections.push(Json::obj([
+            ("config", Json::str(pkg)),
+            ("section", Json::str(sec.addr.as_uci())),
+            ("type", Json::str(&sec.section_type)),
+            ("values", Json::Obj(values)),
+        ]));
+    }
+
     Json::obj([("sections", Json::Arr(sections))])
 }
 
@@ -113,7 +166,10 @@ pub fn terraform_address(package: &str, addr: &SectionAddr) -> String {
     s.push('_');
     match addr {
         SectionAddr::Named(n) => s.push_str(n),
-        SectionAddr::Anonymous { section_type, type_index } => {
+        SectionAddr::Anonymous {
+            section_type,
+            type_index,
+        } => {
             s.push_str(&section_type.replace('-', "_"));
             s.push('_');
             s.push_str(&type_index.to_string());
@@ -148,7 +204,10 @@ pub fn report(inv: &Inventory) -> Json {
                 ("package", Json::str(&p.name)),
                 ("disposition", Json::str(p.disposition.tag())),
                 ("why", Json::str(p.disposition.why().unwrap_or(""))),
-                ("sections", Json::Int(i64::try_from(p.sections.len()).unwrap_or(i64::MAX))),
+                (
+                    "sections",
+                    Json::Int(i64::try_from(p.sections.len()).unwrap_or(i64::MAX)),
+                ),
             ])
         })
         .collect();
@@ -160,10 +219,22 @@ pub fn report(inv: &Inventory) -> Json {
         (
             "coverage",
             Json::obj([
-                ("packagesOnDevice", Json::Int(i64::try_from(pkgs).unwrap_or(i64::MAX))),
-                ("packagesManaged", Json::Int(i64::try_from(managed_pkgs).unwrap_or(i64::MAX))),
-                ("sectionsOnDevice", Json::Int(i64::try_from(sections).unwrap_or(i64::MAX))),
-                ("sectionsManaged", Json::Int(i64::try_from(managed_sections).unwrap_or(i64::MAX))),
+                (
+                    "packagesOnDevice",
+                    Json::Int(i64::try_from(pkgs).unwrap_or(i64::MAX)),
+                ),
+                (
+                    "packagesManaged",
+                    Json::Int(i64::try_from(managed_pkgs).unwrap_or(i64::MAX)),
+                ),
+                (
+                    "sectionsOnDevice",
+                    Json::Int(i64::try_from(sections).unwrap_or(i64::MAX)),
+                ),
+                (
+                    "sectionsManaged",
+                    Json::Int(i64::try_from(managed_sections).unwrap_or(i64::MAX)),
+                ),
                 (
                     "sectionsManagedAnonymous",
                     Json::Int(i64::try_from(anonymous_managed).unwrap_or(i64::MAX)),
@@ -200,7 +271,10 @@ pub fn renames(rs: &[Rename]) -> Json {
         })
         .collect();
     Json::obj([
-        ("count", Json::Int(i64::try_from(rs.len()).unwrap_or(i64::MAX))),
+        (
+            "count",
+            Json::Int(i64::try_from(rs.len()).unwrap_or(i64::MAX)),
+        ),
         ("renames", Json::Arr(items)),
     ])
 }
@@ -302,7 +376,29 @@ mod tests {
                 Package {
                     name: "wireless".to_owned(),
                     disposition: Disposition::SecretBearing { why: "psk" },
-                    sections: vec![],
+                    // ★ A REAL section. This was `vec![]`, which made
+                    // `a_secret_bearing_package_contributes_no_sections_to_values`
+                    // pass without ever exercising what it claimed to guard —
+                    // an empty package contributes nothing under any rule.
+                    sections: vec![Section {
+                        addr: SectionAddr::Named("default_radio0".to_owned()),
+                        internal_name: "default_radio0".to_owned(),
+                        section_type: "wifi-iface".to_owned(),
+                        options: {
+                            let mut o = BTreeMap::new();
+                            // structural — an operator tunes these
+                            o.insert("ssid".to_owned(), "Buzios".to_owned());
+                            o.insert("channel".to_owned(), "4".to_owned());
+                            o.insert("htmode".to_owned(), "HE20".to_owned());
+                            o.insert("disabled".to_owned(), "0".to_owned());
+                            // the PSK — must never travel
+                            o.insert("key".to_owned(), "hunter2-the-real-psk".to_owned());
+                            // an option no list knows: fail-closed must omit it
+                            o.insert("vendor_blob".to_owned(), "unclassified".to_owned());
+                            o
+                        },
+                        secret_options: vec!["key".to_owned()],
+                    }],
                     secret_agreement: vec![],
                 },
             ],
@@ -320,14 +416,21 @@ mod tests {
         assert_eq!(
             got,
             vec![
-                ("openwrt_uci_section.network_device_2".to_owned(), "network.@device[2]".to_owned()),
-                ("openwrt_uci_section.network_lan".to_owned(), "network.lan".to_owned()),
+                (
+                    "openwrt_uci_section.network_device_2".to_owned(),
+                    "network.@device[2]".to_owned()
+                ),
+                (
+                    "openwrt_uci_section.network_lan".to_owned(),
+                    "network.lan".to_owned()
+                ),
             ]
         );
         // The address must contain nothing terraform rejects.
         for (addr, _) in &got {
             assert!(
-                addr.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.'),
+                addr.chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.'),
                 "illegal terraform address: {addr}"
             );
         }
@@ -367,17 +470,63 @@ mod tests {
         // inv() has one named and one anonymous managed section.
         let safe = helm_values(&inv()).render();
         assert!(safe.contains("\"section\": \"lan\""));
-        assert!(!safe.contains("@device[2]"), "positional identity in committable output");
+        assert!(
+            !safe.contains("@device[2]"),
+            "positional identity in committable output"
+        );
         // And the opt-in includes it.
         let all = helm_values_scoped(&inv(), Scope::IncludePositional).render();
         assert!(all.contains("@device[2]"));
     }
 
+    /// ★ THE SAFETY PROPERTY, and it is the one that must never weaken: a
+    /// secret's VALUE never reaches the values file.
     #[test]
-    fn a_secret_bearing_package_contributes_no_sections_to_values() {
+    fn a_secret_value_never_reaches_the_values_file() {
         let rendered = helm_values(&inv()).render();
-        assert!(!rendered.contains("wireless"), "secret pkg reached the values file");
-        assert!(rendered.contains("network"));
+        assert!(
+            !rendered.contains("hunter2-the-real-psk"),
+            "the PSK reached the values file: {rendered}"
+        );
+        assert!(
+            !rendered.contains("\"key\""),
+            "the secret OPTION must not be declared at all: {rendered}"
+        );
+    }
+
+    /// ★ THE GAP THIS CLOSES. `wireless` used to contribute nothing because
+    /// one option in it is a PSK, so `channel` and `htmode` — already
+    /// classified non-secret by the same authority — were unmanageable.
+    ///
+    /// Safe because `uci set` MERGES: a section declaring only these leaves
+    /// every undeclared option, the PSK included, as the device has it.
+    #[test]
+    fn a_secret_bearing_package_contributes_its_structural_options() {
+        let rendered = helm_values(&inv()).render();
+        assert!(rendered.contains("wireless"), "structural section missing");
+        for structural in ["ssid", "channel", "htmode", "disabled"] {
+            assert!(
+                rendered.contains(structural),
+                "{structural} is not secret and must be manageable: {rendered}"
+            );
+        }
+        assert!(rendered.contains("network"), "managed packages still emit");
+    }
+
+    /// ★ FAIL-CLOSED. An option no list recognises is OMITTED, not guessed at.
+    /// Name-matching alone was measured insufficient — NordVPN stores a bearer
+    /// token in `wireguard.<peer>.username` — so anything unproven stays out.
+    #[test]
+    fn an_unrecognised_option_in_a_secret_package_is_omitted() {
+        let rendered = helm_values(&inv()).render();
+        assert!(
+            !rendered.contains("vendor_blob"),
+            "an unclassified option must not be emitted from a secret package: {rendered}"
+        );
+        assert!(
+            !rendered.contains("unclassified"),
+            "nor its value: {rendered}"
+        );
     }
 
     #[test]

@@ -107,14 +107,16 @@ pub fn judge(inv: &Inventory, uncommitted: Option<usize>) -> Vec<Check> {
         verdict: match option_of(inv, "tailscale", "settings", "enabled") {
             Some("1") => Verdict::Pass,
             _ => Verdict::Fail(
-                "tailscale.settings.enabled is not \"1\" — stack the `tailnet` profile"
-                    .to_owned(),
+                "tailscale.settings.enabled is not \"1\" — stack the `tailnet` profile".to_owned(),
             ),
         },
     });
 
     // ── 4. Stable identities ────────────────────────────────────────────────
-    let anon = inv.managed_sections().filter(|(_, s)| s.addr.is_anonymous()).count();
+    let anon = inv
+        .managed_sections()
+        .filter(|(_, s)| s.addr.is_anonymous())
+        .count();
     out.push(Check {
         name: "no-positional-identity",
         because: "@type[N] renumbers when any earlier section of that type is removed, so a \
@@ -123,7 +125,9 @@ pub fn judge(inv: &Inventory, uncommitted: Option<usize>) -> Vec<Check> {
         verdict: if anon == 0 {
             Verdict::Pass
         } else {
-            Verdict::Fail(format!("{anon} managed sections are positional — run `renames --apply`"))
+            Verdict::Fail(format!(
+                "{anon} managed sections are positional — run `renames --apply`"
+            ))
         },
     });
 
@@ -146,7 +150,9 @@ pub fn judge(inv: &Inventory, uncommitted: Option<usize>) -> Vec<Check> {
                   in the chart and anonymous on the wire",
         verdict: match option_of(inv, "roteador", "fleet", "owner") {
             Some(_) => Verdict::Pass,
-            None => Verdict::Fail("roteador.fleet.owner is unset — stack `fleet-managed`".to_owned()),
+            None => {
+                Verdict::Fail("roteador.fleet.owner is unset — stack `fleet-managed`".to_owned())
+            }
         },
     });
 
@@ -211,7 +217,10 @@ fn secrets_agree(inv: &Inventory) -> Check {
         verdict: if disagreeing.is_empty() {
             Verdict::Pass
         } else {
-            Verdict::Fail(format!("secret disagrees between carriers: {}", disagreeing.join(", ")))
+            Verdict::Fail(format!(
+                "secret disagrees between carriers: {}",
+                disagreeing.join(", ")
+            ))
         },
     }
 }
@@ -234,7 +243,10 @@ mod tests {
             addr: SectionAddr::Named(name.to_owned()),
             internal_name: name.to_owned(),
             section_type: ty.to_owned(),
-            options: kv.iter().map(|(k, v)| ((*k).to_owned(), (*v).to_owned())).collect(),
+            options: kv
+                .iter()
+                .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+                .collect(),
             secret_options: vec![],
         }
     }
@@ -249,12 +261,21 @@ mod tests {
     fn good() -> Inventory {
         Inventory {
             packages: vec![
-                pkg("system", vec![
-                    sec("ntp", "timeserver", &[("enabled", "1")]),
-                    sec("system_0", "system", &[("hostname", "roteador-natal")]),
-                ]),
-                pkg("tailscale", vec![sec("settings", "settings", &[("enabled", "1")])]),
-                pkg("roteador", vec![sec("fleet", "managed", &[("owner", "pleme-io")])]),
+                pkg(
+                    "system",
+                    vec![
+                        sec("ntp", "timeserver", &[("enabled", "1")]),
+                        sec("system_0", "system", &[("hostname", "roteador-natal")]),
+                    ],
+                ),
+                pkg(
+                    "tailscale",
+                    vec![sec("settings", "settings", &[("enabled", "1")])],
+                ),
+                pkg(
+                    "roteador",
+                    vec![sec("fleet", "managed", &[("owner", "pleme-io")])],
+                ),
             ],
         }
     }
@@ -262,7 +283,13 @@ mod tests {
     #[test]
     fn a_correctly_prepared_router_is_ready() {
         let c = judge(&good(), Some(0));
-        assert!(ready(&c), "failures: {:?}", c.iter().filter(|x| matches!(x.verdict, Verdict::Fail(_))).collect::<Vec<_>>());
+        assert!(
+            ready(&c),
+            "failures: {:?}",
+            c.iter()
+                .filter(|x| matches!(x.verdict, Verdict::Fail(_)))
+                .collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -270,42 +297,68 @@ mod tests {
         // ★ RED RUN. A readiness gate that has never failed is decoration.
         type Breaker = Box<dyn Fn(&mut Inventory)>;
         let cases: Vec<(&str, Breaker)> = vec![
-            ("ntp-declared", Box::new(|i: &mut Inventory| {
-                i.packages[0].sections[0].options.clear();
-            })),
-            ("hostname-not-factory", Box::new(|i: &mut Inventory| {
-                i.packages[0].sections[1].options.insert("hostname".into(), "GL-MT6000".into());
-            })),
-            ("tailnet-declared", Box::new(|i: &mut Inventory| {
-                i.packages[1].sections[0].options.clear();
-            })),
-            ("fleet-marker", Box::new(|i: &mut Inventory| {
-                i.packages[2].sections[0].options.clear();
-            })),
+            (
+                "ntp-declared",
+                Box::new(|i: &mut Inventory| {
+                    i.packages[0].sections[0].options.clear();
+                }),
+            ),
+            (
+                "hostname-not-factory",
+                Box::new(|i: &mut Inventory| {
+                    i.packages[0].sections[1]
+                        .options
+                        .insert("hostname".into(), "GL-MT6000".into());
+                }),
+            ),
+            (
+                "tailnet-declared",
+                Box::new(|i: &mut Inventory| {
+                    i.packages[1].sections[0].options.clear();
+                }),
+            ),
+            (
+                "fleet-marker",
+                Box::new(|i: &mut Inventory| {
+                    i.packages[2].sections[0].options.clear();
+                }),
+            ),
             // The 2026-09-09 incident, reproduced: two bands, one PSK each,
             // and they differ. Note the fixture carries no secret VALUE —
             // there is nowhere to put one, which is the point.
-            ("secrets-agree-across-bands", Box::new(|i: &mut Inventory| {
-                i.packages.push(Package {
-                    name: "wireless".to_owned(),
-                    disposition: Disposition::SecretBearing { why: "PSKs" },
-                    sections: vec![],
-                    secret_agreement: vec![crate::inventory::SecretAgreement {
-                        option: "key".to_owned(),
-                        network: "lan".to_owned(),
-                        sections: vec!["wifi2g".to_owned(), "wifi5g".to_owned()],
-                        agree: false,
-                    }],
-                });
-            })),
+            (
+                "secrets-agree-across-bands",
+                Box::new(|i: &mut Inventory| {
+                    i.packages.push(Package {
+                        name: "wireless".to_owned(),
+                        disposition: Disposition::SecretBearing { why: "PSKs" },
+                        sections: vec![],
+                        secret_agreement: vec![crate::inventory::SecretAgreement {
+                            option: "key".to_owned(),
+                            network: "lan".to_owned(),
+                            sections: vec!["wifi2g".to_owned(), "wifi5g".to_owned()],
+                            agree: false,
+                        }],
+                    });
+                }),
+            ),
         ];
         for (name, break_it) in cases {
             let mut inv = good();
             break_it(&mut inv);
             let checks = judge(&inv, Some(0));
-            let c = checks.iter().find(|c| c.name == name).expect("check exists");
-            assert!(matches!(c.verdict, Verdict::Fail(_)), "{name} did not detect its own defect");
-            assert!(!ready(&checks), "{name} failed but the router still read as ready");
+            let c = checks
+                .iter()
+                .find(|c| c.name == name)
+                .expect("check exists");
+            assert!(
+                matches!(c.verdict, Verdict::Fail(_)),
+                "{name} did not detect its own defect"
+            );
+            assert!(
+                !ready(&checks),
+                "{name} failed but the router still read as ready"
+            );
         }
     }
 
@@ -313,7 +366,10 @@ mod tests {
     fn a_positional_section_is_refused() {
         let mut inv = good();
         inv.packages[0].sections.push(Section {
-            addr: SectionAddr::Anonymous { section_type: "rule".into(), type_index: 0 },
+            addr: SectionAddr::Anonymous {
+                section_type: "rule".into(),
+                type_index: 0,
+            },
             internal_name: "cfg01".into(),
             section_type: "rule".into(),
             options: BTreeMap::new(),
@@ -329,7 +385,13 @@ mod tests {
         let u = c.iter().find(|c| c.name == "clock-correct").unwrap();
         assert!(matches!(u.verdict, Verdict::Unobservable(_)));
         assert!(ready(&c), "an unobservable must not block");
-        let staged = c.iter().find(|c| c.name == "no-uncommitted-changes").unwrap();
-        assert!(matches!(staged.verdict, Verdict::Unobservable(_)), "unqueried != zero");
+        let staged = c
+            .iter()
+            .find(|c| c.name == "no-uncommitted-changes")
+            .unwrap();
+        assert!(
+            matches!(staged.verdict, Verdict::Unobservable(_)),
+            "unqueried != zero"
+        );
     }
 }
