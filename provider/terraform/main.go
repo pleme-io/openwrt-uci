@@ -11,9 +11,10 @@
 package main
 
 import (
-	"context"
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -22,10 +23,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
 // ---- the façade client ----
@@ -33,6 +34,49 @@ import (
 type client struct {
 	baseURL string
 	http    *http.Client
+}
+
+// callError is every way a façade call can fail. The ways are kept apart
+// because they mean different things to a caller deciding what the device
+// holds: only the device itself can say a section is absent.
+type callError struct {
+	op string
+	// transport is set when no HTTP answer arrived at all: the tunnel is down,
+	// the connection was refused, the request timed out. Nothing was observed.
+	transport error
+	// status is the adapter's HTTP status when it did answer.
+	status int
+	// message is the adapter's `error` field, or why the reply did not decode.
+	message string
+}
+
+func (e *callError) Error() string {
+	if e.transport != nil {
+		return fmt.Sprintf("%s: no answer from the adapter: %v", e.op, e.transport)
+	}
+	return fmt.Sprintf("%s: HTTP %d: %s", e.op, e.status, e.message)
+}
+
+func (e *callError) Unwrap() error { return e.transport }
+
+// ubusNotFound is the adapter's reply when the DEVICE answered ubus status 4.
+// ubus-http spells it once (crates/ubus-http/src/http.rs, the
+// `ClientError::Status(4)` arm) and `adapter_contract_test.go` pins it here.
+// The adapter's other 404s — an unrouted path, a device with no `uci` object —
+// are about the adapter or the device, not about the section.
+const ubusNotFound = "ubus status 4: not found"
+
+// deviceSaysAbsent is true only when the device itself answered "not found".
+//
+// ★ This is the ONLY evidence that a section is gone. It used to be "any
+// error", so a refused connection read as a deleted section: with the tunnel
+// to repetidor-buzios down on 2026-09-19, each refresh removed the sections it
+// could not reach from state, 61 then 73 then all 76, and the next plan
+// proposed creating every section the router already had.
+func deviceSaysAbsent(err error) bool {
+	var ce *callError
+	return errors.As(err, &ce) && ce.transport == nil &&
+		ce.status == http.StatusNotFound && ce.message == ubusNotFound
 }
 
 // call performs one façade operation. The path is the façade path, verbatim.
@@ -48,17 +92,18 @@ func (c *client) call(ctx context.Context, op string, args map[string]any) (map[
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, &callError{op: op, transport: err}
 	}
 	defer resp.Body.Close()
 
 	var out map[string]any
 	// A 200 with no return value is `{"ok":true}`; decode either way.
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, fmt.Errorf("%s: decoding the reply: %w", op, err)
+		return nil, &callError{op: op, status: resp.StatusCode, message: "decoding the reply: " + err.Error()}
 	}
 	if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("%s: %s: %v", op, resp.Status, out["error"])
+		msg, _ := out["error"].(string)
+		return nil, &callError{op: op, status: resp.StatusCode, message: msg}
 	}
 	return out, nil
 }
@@ -227,9 +272,17 @@ func (r *uciSectionResource) Read(ctx context.Context, req resource.ReadRequest,
 		"section": m.Section.ValueString(),
 	})
 	if err != nil {
-		// A section that is gone is a REMOVED resource, not an error: leaving it
-		// in state would make the next plan try to update something absent.
-		resp.State.RemoveResource(ctx)
+		// A section the DEVICE says is gone is a removed resource, not an
+		// error: leaving it in state would make the next plan try to update
+		// something absent.
+		if deviceSaysAbsent(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+		// Anything else observed nothing about the section. Fail the read and
+		// keep state: a refresh that cannot see the device must not conclude
+		// the device is empty.
+		resp.Diagnostics.AddError("reading the section failed; state kept", err.Error())
 		return
 	}
 	if vals, ok := out["values"].(map[string]any); ok {
