@@ -304,6 +304,7 @@ mod tests {
                 .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
                 .collect(),
             secret_options: vec![],
+            lists: std::collections::BTreeMap::new(),
         }
     }
     fn pkg(sections: Vec<Section>) -> Package {
@@ -384,6 +385,7 @@ mod tests {
             section_type: "rule".to_owned(),
             options: std::collections::BTreeMap::new(),
             secret_options: vec![],
+            lists: std::collections::BTreeMap::new(),
         });
         let r = propose(&pkg(sections));
         // The obvious name is taken by a real section, so the proposal moves.
@@ -398,6 +400,7 @@ mod tests {
             section_type: "zone".to_owned(),
             options: std::collections::BTreeMap::new(),
             secret_options: vec![],
+            lists: std::collections::BTreeMap::new(),
         }]);
         assert!(propose(&p).is_empty());
     }

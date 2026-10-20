@@ -248,6 +248,7 @@ mod tests {
                 .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
                 .collect(),
             secret_options: vec![],
+            lists: std::collections::BTreeMap::new(),
         }
     }
     fn pkg(name: &str, s: Vec<Section>) -> Package {
@@ -374,6 +375,7 @@ mod tests {
             section_type: "rule".into(),
             options: BTreeMap::new(),
             secret_options: vec![],
+            lists: std::collections::BTreeMap::new(),
         });
         assert!(!ready(&judge(&inv, Some(0))));
     }

@@ -49,12 +49,7 @@ pub fn helm_values_scoped(inv: &Inventory, scope: Scope) -> Json {
                 .iter()
                 .map(|(k, v)| (k.clone(), Json::str(v)))
                 .collect();
-            Json::obj([
-                ("config", Json::str(pkg)),
-                ("section", Json::str(s.addr.as_uci())),
-                ("type", Json::str(&s.section_type)),
-                ("values", Json::Obj(values)),
-            ])
+            section_json(pkg, s, values, lists_json(s.lists.iter()))
         })
         .collect();
     // ── ★ Secret-bearing packages contribute their STRUCTURAL options ─────
@@ -89,28 +84,51 @@ pub fn helm_values_scoped(inv: &Inventory, scope: Scope) -> Json {
             // kept verbatim while scrubbing. Reusing it keeps ONE authority
             // for "measurably not material" rather than minting a second list
             // that drifts.
-            .filter(|(k, _)| {
-                let lower = k.to_ascii_lowercase();
-                crate::capture::STRUCTURAL.contains(&lower.as_str())
-                    && !crate::disposition::option_is_secret(k)
-            })
+            .filter(|(k, _)| structural(k))
             .map(|(k, v)| (k.clone(), Json::str(v)))
             .collect();
         // A section whose every option is secret contributes nothing: an
         // empty `values` would declare "this section has no options", which
         // is a claim about the device we have not measured and do not mean.
-        if values.is_empty() {
+        let lists = lists_json(sec.lists.iter().filter(|(k, _)| structural(k)));
+        if values.is_empty() && lists.is_empty() {
             continue;
         }
-        sections.push(Json::obj([
-            ("config", Json::str(pkg)),
-            ("section", Json::str(sec.addr.as_uci())),
-            ("type", Json::str(&sec.section_type)),
-            ("values", Json::Obj(values)),
-        ]));
+        sections.push(section_json(pkg, sec, values, lists));
     }
 
     Json::obj([("sections", Json::Arr(sections))])
+}
+
+fn structural(k: &str) -> bool {
+    let lower = k.to_ascii_lowercase();
+    crate::capture::STRUCTURAL.contains(&lower.as_str()) && !crate::disposition::option_is_secret(k)
+}
+
+fn lists_json<'a>(
+    lists: impl Iterator<Item = (&'a String, &'a Vec<String>)>,
+) -> Vec<(String, Json)> {
+    lists
+        .map(|(k, items)| (k.clone(), Json::Arr(items.iter().map(Json::str).collect())))
+        .collect()
+}
+
+fn section_json(
+    pkg: &str,
+    s: &crate::inventory::Section,
+    values: Vec<(String, Json)>,
+    lists: Vec<(String, Json)>,
+) -> Json {
+    let mut fields = vec![
+        ("config".to_owned(), Json::str(pkg)),
+        ("section".to_owned(), Json::str(s.addr.as_uci())),
+        ("type".to_owned(), Json::str(&s.section_type)),
+        ("values".to_owned(), Json::Obj(values)),
+    ];
+    if !lists.is_empty() {
+        fields.push(("lists".to_owned(), Json::Obj(lists)));
+    }
+    Json::Obj(fields)
 }
 
 /// [`helm_values_scoped`] with the safe default scope.
@@ -333,6 +351,19 @@ pub fn helm_values_yaml(inv: &Inventory, scope: Scope) -> String {
                 o.push('\n');
             }
         }
+        if !s.lists.is_empty() {
+            o.push_str("    lists:\n");
+            for (k, items) in &s.lists {
+                o.push_str("      ");
+                o.push_str(&q(k));
+                o.push_str(":\n");
+                for it in items {
+                    o.push_str("        - ");
+                    o.push_str(&q(it));
+                    o.push('\n');
+                }
+            }
+        }
     }
     o
 }
@@ -360,6 +391,7 @@ mod tests {
                             section_type: "interface".to_owned(),
                             options: options.clone(),
                             secret_options: vec![],
+                            lists: std::collections::BTreeMap::new(),
                         },
                         Section {
                             addr: SectionAddr::Anonymous {
@@ -370,6 +402,7 @@ mod tests {
                             section_type: "device".to_owned(),
                             options: BTreeMap::new(),
                             secret_options: vec![],
+                            lists: std::collections::BTreeMap::new(),
                         },
                     ],
                 },
@@ -398,11 +431,37 @@ mod tests {
                             o
                         },
                         secret_options: vec!["key".to_owned()],
+                        lists: std::collections::BTreeMap::new(),
                     }],
                     secret_agreement: vec![],
                 },
             ],
         }
+    }
+
+    #[test]
+    fn list_options_are_emitted_as_lists_in_order() {
+        let mut i = inv();
+        i.packages[0].sections[0].lists.insert(
+            "dns".to_owned(),
+            vec!["192.168.50.3".to_owned(), "1.1.1.1".to_owned()],
+        );
+        let rendered: String = helm_values(&i)
+            .render()
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .collect();
+        assert!(
+            rendered.contains(r#""lists":{"dns":["192.168.50.3","1.1.1.1"]}"#),
+            "{rendered}"
+        );
+        let yaml = helm_values_yaml(&i, Scope::StableOnly);
+        assert!(
+            yaml.contains(
+                "    lists:\n      \"dns\":\n        - \"192.168.50.3\"\n        - \"1.1.1.1\"\n"
+            ),
+            "{yaml}"
+        );
     }
 
     #[test]
@@ -456,6 +515,7 @@ mod tests {
                     section_type: "t".to_owned(),
                     options,
                     secret_options: vec![],
+                    lists: std::collections::BTreeMap::new(),
                 }],
             }],
         };

@@ -60,27 +60,18 @@ a device carries, including vendor-specific ones, because round-trip fidelity
 cannot be selective. Typed per-package schemas (`network`, `wireless`,
 `firewall`, …) and transports (ubus, SSH) are layers above this one.
 
-### ★ KNOWN GAP — list options do not survive the derive/state path
+### List options
 
-`pending-uci-list-options-underived` (measured 2026-09-17, both Búzios routers).
+A UCI **list** option arrives from ubus as a JSON *array*, and `uci add`/`uci set`
+given an array replace the whole list in order. `openwrt_uci_section` carries
+them in `lists` (option name to ordered list of strings), and `uci-inventory`
+derives them into the same field of `sections-*.yaml`.
 
-A UCI **list** option arrives from ubus as a JSON *array*. The terraform
-provider's `Read` populates state with `if s, ok := v.(string); ok`
-(`provider/terraform/main.go`), so an array fails the assertion and is dropped
-**silently**; `uci-inventory` derives the same way. Consequence:
-`network.device_br_lan.ports` — the bridge's entire port list — appears in no
-`sections-*.yaml` and no imports file, on any router, and nothing reports it.
-
-★ Read the blast radius precisely before "fixing" it. Deletion is driven by
-PRIOR STATE: `Update` diffs `priorVals` against the declared map and deletes the
-difference. An option that never entered state is never in `priorVals` and so is
-**never deleted** — these options are *undefended* (nothing reconciles them if
-someone edits the device), **not** *endangered* by an apply. That distinction
-decides the urgency, and getting it backwards argues for an emergency that isn't.
-
-The fix belongs here and in the provider's `Read`, not in generated output — a
-hand-added `ports:` in a `sections-*.yaml` is a value the next `uci-inventory
-values` run silently drops again.
+`lists` is managed only where it is declared. Omitted, a section's list options
+are never read into state and so never deleted, which is how every resource
+behaved before `lists` existed (`network.device_br_lan.ports` stays where it is
+under an old template). Declared, even as `{}`, the map is authoritative: a list
+option the device holds that it does not name is deleted on apply.
 
 ## Testing
 

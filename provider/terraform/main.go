@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -169,6 +170,7 @@ type uciSectionModel struct {
 	Section types.String `tfsdk:"section"`
 	Type    types.String `tfsdk:"type"`
 	Values  types.Map    `tfsdk:"values"`
+	Lists   types.Map    `tfsdk:"lists"`
 }
 
 func (r *uciSectionResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -198,7 +200,14 @@ func (r *uciSectionResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"values": rschema.MapAttribute{
 				Required:    true,
 				ElementType: types.StringType,
-				Description: "The section's options.",
+				Description: "The section's scalar options.",
+			},
+			"lists": rschema.MapAttribute{
+				Optional:    true,
+				ElementType: types.ListType{ElemType: types.StringType},
+				Description: "The section's list options (`list server '...'`), each an ordered list of values. Order is significant: dnsmasq tries `server` entries in order. " +
+					"Omitted, the section's list options are left unmanaged: never read into state and never deleted. " +
+					"Declared (even as `{}`), the map is authoritative: list options the device holds that it does not name are deleted.",
 			},
 		},
 	}
@@ -219,7 +228,56 @@ func (m *uciSectionModel) valueMap(ctx context.Context) (map[string]any, error) 
 	for k, v := range raw {
 		out[k] = v
 	}
+	if m.Lists.IsNull() || m.Lists.IsUnknown() {
+		return out, nil
+	}
+	lists := map[string][]string{}
+	if diags := m.Lists.ElementsAs(ctx, &lists, false); diags.HasError() {
+		return nil, fmt.Errorf("lists is not a map of lists of strings")
+	}
+	for k, items := range lists {
+		if _, dup := out[k]; dup {
+			return nil, fmt.Errorf("option %q is declared in both values and lists", k)
+		}
+		arr := make([]any, len(items))
+		for i, it := range items {
+			arr[i] = it
+		}
+		out[k] = arr
+	}
 	return out, nil
+}
+
+func splitOptions(ctx context.Context, vals map[string]any, priorLists types.Map) (types.Map, types.Map, diag.Diagnostics) {
+	scalars := map[string]string{}
+	lists := map[string][]string{}
+	for k, v := range vals {
+		switch tv := v.(type) {
+		case string:
+			scalars[k] = tv
+		case []any:
+			items := make([]string, 0, len(tv))
+			for _, it := range tv {
+				if s, ok := it.(string); ok {
+					items = append(items, s)
+				}
+			}
+			lists[k] = items
+		}
+	}
+	delete(scalars, ".type")
+	delete(scalars, ".name")
+	delete(scalars, ".anonymous")
+	var diags diag.Diagnostics
+	sv, d := types.MapValueFrom(ctx, types.StringType, scalars)
+	diags.Append(d...)
+	listType := types.ListType{ElemType: types.StringType}
+	if priorLists.IsNull() {
+		return sv, types.MapNull(listType), diags
+	}
+	lv, d := types.MapValueFrom(ctx, listType, lists)
+	diags.Append(d...)
+	return sv, lv, diags
 }
 
 func (r *uciSectionResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -286,12 +344,6 @@ func (r *uciSectionResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 	if vals, ok := out["values"].(map[string]any); ok {
-		asStr := map[string]string{}
-		for k, v := range vals {
-			if s, ok := v.(string); ok {
-				asStr[k] = s
-			}
-		}
 		// ★ `.type` is read BEFORE it is deleted, and it populates the `type`
 		// attribute rather than being discarded.
 		//
@@ -305,14 +357,11 @@ func (r *uciSectionResource) Read(ctx context.Context, req resource.ReadRequest,
 		if ty, ok := vals[".type"].(string); ok && ty != "" {
 			m.Type = types.StringValue(ty)
 		}
-		// UCI bookkeeping, not options — must not appear as ones.
-		delete(asStr, ".type")
-		delete(asStr, ".name")
-		delete(asStr, ".anonymous")
-		mv, diags := types.MapValueFrom(ctx, types.StringType, asStr)
+		sv, lv, diags := splitOptions(ctx, vals, m.Lists)
 		resp.Diagnostics.Append(diags...)
 		if !resp.Diagnostics.HasError() {
-			m.Values = mv
+			m.Values = sv
+			m.Lists = lv
 		}
 	}
 	// Computed, so it is null on an imported resource until something sets it.
@@ -346,6 +395,9 @@ func (r *uciSectionResource) Update(ctx context.Context, req resource.UpdateRequ
 	if err != nil {
 		resp.Diagnostics.AddError("invalid values", err.Error())
 		return
+	}
+	if m.Lists.IsNull() {
+		prior.Lists = m.Lists
 	}
 	priorVals, err := prior.valueMap(ctx)
 	if err != nil {

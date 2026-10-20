@@ -28,6 +28,7 @@ func readAgainst(t *testing.T, baseURL string) (kept bool, failed bool) {
 		Section: types.StringValue("lan"),
 		Type:    types.StringValue("interface"),
 		Values:  types.MapValueMust(types.StringType, map[string]attr.Value{"proto": types.StringValue("static")}),
+		Lists:   types.MapNull(types.ListType{ElemType: types.StringType}),
 	}
 	if diags := state.Set(ctx, &held); diags.HasError() {
 		t.Fatalf("seeding state: %v", diags)

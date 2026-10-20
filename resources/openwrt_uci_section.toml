@@ -66,7 +66,12 @@ description = "The section type, e.g. `interface` in `config interface 'lan'`. R
 [fields.values]
 type = "Table"
 required = false
-description = "The section's options, as a flat map. UCI has no scalar/list distinction at this layer — a list option is a value that happens to repeat — so this is passed through as measured rather than split into two fields."
+description = "The section's scalar options, as a flat map of strings. List options are carried by `lists`; an option may appear in only one of the two."
+
+[fields.lists]
+type = "Table"
+required = false
+description = "The section's list options (`list server '...'`), as a map of option name to an ORDERED list of strings. The device answers a list option of `uci get` as a JSON array, and `uci add`/`uci set` given an array replace the whole list in order, so no add_list/del_list round trips are needed. Order is part of the value: dnsmasq tries `server` entries in order. Omitted, list options stay unmanaged (never read into state, never deleted); declared, even as an empty table, the map is authoritative."
 
 [fields.match]
 type = "Table"

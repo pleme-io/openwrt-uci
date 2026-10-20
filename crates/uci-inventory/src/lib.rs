@@ -32,10 +32,6 @@
 //!
 //! # Known gaps, named rather than implied
 //!
-//! `pending-uci-lists`: a UCI option may be a LIST, and the resource's
-//! `values` is a map-of-string, so list-valued options are surveyed but not
-//! derived.
-//!
 //! `pending-anonymous-rename`: anonymous sections are addressed positionally,
 //! so deleting an earlier section of the same type silently repoints later
 //! addresses. `uci rename` is the fix, and it mutates the device.

@@ -76,6 +76,8 @@ pub struct Section {
     /// already removed — those are not options and must never be emitted as if
     /// they were.
     pub options: BTreeMap<String, String>,
+    /// List options (`list server '...'`), each in device order.
+    pub lists: BTreeMap<String, Vec<String>>,
     /// Option names in this section that are secret-bearing.
     pub secret_options: Vec<String>,
 }
@@ -321,6 +323,7 @@ pub fn parse_package(
         };
 
         let mut options = BTreeMap::new();
+        let mut lists: BTreeMap<String, Vec<String>> = BTreeMap::new();
         let mut secret_options = Vec::new();
         let mut staged: Vec<(String, String)> = Vec::new();
         if let Json::Obj(fields) = val {
@@ -344,11 +347,9 @@ pub fn parse_package(
                 }
                 if let Some(s) = scalar(v) {
                     options.insert(k.clone(), s);
+                } else if let Json::Arr(items) = v {
+                    lists.insert(k.clone(), items.iter().filter_map(scalar).collect());
                 }
-                // A non-scalar option (a UCI list) is deliberately skipped here
-                // rather than flattened: the resource's `values` is a
-                // map-of-string, so a list has no representation yet. See
-                // `pending-uci-lists` in the crate docs.
             }
         }
         secret_options.sort_unstable();
@@ -371,6 +372,7 @@ pub fn parse_package(
             internal_name,
             section_type,
             options,
+            lists,
             secret_options,
         });
     }
@@ -540,6 +542,24 @@ mod tests {
         let p = parse_package("firewall", Disposition::Managed, &body).expect("parses");
         let addrs: Vec<String> = p.sections.iter().map(|s| s.addr.as_uci()).collect();
         assert_eq!(addrs, vec!["@rule[0]", "@zone[0]", "@rule[1]"]);
+    }
+
+    #[test]
+    fn list_options_are_kept_in_device_order() {
+        let body = pkg_json(
+            r#"{"values":{
+                "dnsmasq_0":{".type":"dnsmasq",".anonymous":false,".name":"dnsmasq_0","domain":"lan",
+                    "server":["/pleme.internal/192.168.50.3","/b/1.1.1.1"]}
+            }}"#,
+        );
+        let p = parse_package("dhcp", Disposition::Managed, &body).expect("parses");
+        let s = &p.sections[0];
+        assert_eq!(
+            s.lists["server"],
+            vec!["/pleme.internal/192.168.50.3", "/b/1.1.1.1"]
+        );
+        assert!(!s.options.contains_key("server"));
+        assert_eq!(s.options["domain"], "lan");
     }
 
     #[test]
