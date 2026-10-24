@@ -18,10 +18,10 @@
   # config-only. The derivation belongs here, once, where the source is.
   #
   # ── The vendorHash is MEASURED, not fresh ──────────────────────────────────
-  # It is carried over verbatim from `nix/overlays/terraform-provider-openwrt.nix`,
-  # and that is sound because `provider/terraform/` is byte-unchanged since the
-  # rev that overlay pinned (`4af95be`) — checked with `git diff` over that path
-  # rather than assumed from the dates.
+  # A fixed-output hash is reused from the store whenever it matches, so a
+  # stale one does not fail: it vendors the OLD package set and the build then
+  # fails on a missing import. Re-measure it with a fake hash whenever the
+  # provider's imports change (last: the `mapplanmodifier` import, 2026-10-24).
 
   inputs = {
     # The fleet anchor, reached through substrate so this repo cannot drift
@@ -55,7 +55,7 @@
         # helper documents (`modRoot — Go module root within source`).
         modRoot = "provider/terraform";
 
-        vendorHash = "sha256-rPPj12gq41MYYWgbYpxuGgobDHPCNgsPZdBVTv4s8Fg=";
+        vendorHash = "sha256-4di0oi0tXfEVhBCGXugqv09T6rtsWp37p/zBOH+lDhM=";
 
         repo = "pleme-io/openwrt-uci";
 

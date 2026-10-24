@@ -11,8 +11,10 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 var stringList = types.ListType{ElemType: types.StringType}
@@ -79,10 +81,53 @@ func TestReadSplitsListOptionsIntoLists(t *testing.T) {
 	}
 }
 
-func TestUndeclaredListsAreNeverReadIntoState(t *testing.T) {
+func TestReadRecordsListsTheConfigDoesNotDeclare(t *testing.T) {
 	got := readModel(t, `{"values":{".type":"device","name":"br-lan","ports":["lan1","lan2"]}}`, dnsmasqHeld(types.MapNull(stringList)))
-	if !got.Lists.IsNull() {
-		t.Fatalf("lists = %v, want null: an undeclared list must stay unmanaged", got.Lists)
+	lists := map[string][]string{}
+	got.Lists.ElementsAs(context.Background(), &lists, false)
+	if !reflect.DeepEqual(lists, map[string][]string{"ports": {"lan1", "lan2"}}) {
+		t.Fatalf("lists = %v, want the device's ports", got.Lists)
+	}
+}
+
+func TestImportOfASectionWithListsMatchesTheSameDeclaration(t *testing.T) {
+	s := reply(200, `{"values":{".type":"zone",".name":"zone_lan","name":"lan","input":"ACCEPT","network":["lan","guest"]}}`)
+	defer s.Close()
+	ctx := context.Background()
+	r := &uciSectionResource{c: &client{baseURL: s.URL, http: &http.Client{}}}
+	sch := schemaOf(r).Schema
+	imported := &resource.ImportStateResponse{State: tfsdk.State{Schema: sch, Raw: tftypes.NewValue(sch.Type().TerraformType(ctx), nil)}}
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "firewall.zone_lan"}, imported)
+	if imported.Diagnostics.HasError() {
+		t.Fatal(imported.Diagnostics)
+	}
+	read := &resource.ReadResponse{State: imported.State}
+	r.Read(ctx, resource.ReadRequest{State: imported.State}, read)
+	if read.Diagnostics.HasError() {
+		t.Fatal(read.Diagnostics)
+	}
+	declared := uciSectionModel{
+		ID: types.StringValue("firewall.zone_lan"), Config: types.StringValue("firewall"),
+		Section: types.StringValue("zone_lan"), Type: types.StringValue("zone"),
+		Values: types.MapValueMust(types.StringType, map[string]attr.Value{
+			"name": types.StringValue("lan"), "input": types.StringValue("ACCEPT"),
+		}),
+		Lists: listsValue(t, map[string][]string{"network": {"lan", "guest"}}),
+	}
+	want := tfsdk.State{Schema: sch}
+	if d := want.Set(ctx, &declared); d.HasError() {
+		t.Fatal(d)
+	}
+	if !read.State.Raw.Equal(want.Raw) {
+		t.Fatalf("state after import =\n%v\nwant the declaration\n%v", read.State.Raw, want.Raw)
+	}
+}
+
+func TestListsAreCarriedFromStateWhenTheConfigOmitsThem(t *testing.T) {
+	sch := schemaOf(&uciSectionResource{}).Schema
+	attr, ok := sch.Attributes["lists"].(rschema.MapAttribute)
+	if !ok || !attr.Optional || !attr.Computed || len(attr.PlanModifiers) != 1 {
+		t.Fatalf("lists = %+v, want optional, computed, carried from state", sch.Attributes["lists"])
 	}
 }
 
@@ -102,13 +147,18 @@ func TestUpdateWithListsUndeclaredDeletesNoList(t *testing.T) {
 	r := &uciSectionResource{c: &client{baseURL: s.URL, http: &http.Client{}}}
 	sch := schemaOf(r)
 	prior := dnsmasqHeld(listsValue(t, map[string][]string{"server": {"/a/1"}}))
-	plan := dnsmasqHeld(types.MapNull(stringList))
+	plan := prior
+	declared := dnsmasqHeld(types.MapNull(stringList))
 	st := tfsdk.State{Schema: sch.Schema}
 	st.Set(ctx, &prior)
 	pl := tfsdk.Plan{Schema: sch.Schema}
 	pl.Set(ctx, &plan)
+	cf := tfsdk.Config{Schema: sch.Schema}
+	cfState := tfsdk.State{Schema: sch.Schema}
+	cfState.Set(ctx, &declared)
+	cf.Raw = cfState.Raw
 	resp := &resource.UpdateResponse{State: tfsdk.State{Schema: sch.Schema}}
-	r.Update(ctx, resource.UpdateRequest{State: st, Plan: pl}, resp)
+	r.Update(ctx, resource.UpdateRequest{State: st, Plan: pl, Config: cf}, resp)
 	if resp.Diagnostics.HasError() || len(deleted) != 0 {
 		t.Fatalf("diags=%v deleted=%v, want no delete", resp.Diagnostics, deleted)
 	}
@@ -146,8 +196,9 @@ func TestUpdateWritesListsInOrderAndDeletesDroppedLists(t *testing.T) {
 	st.Set(ctx, &prior)
 	pl := tfsdk.Plan{Schema: sch.Schema}
 	pl.Set(ctx, &plan)
+	cf := tfsdk.Config{Schema: sch.Schema, Raw: pl.Raw}
 	resp := &resource.UpdateResponse{State: tfsdk.State{Schema: sch.Schema}}
-	r.Update(ctx, resource.UpdateRequest{State: st, Plan: pl}, resp)
+	r.Update(ctx, resource.UpdateRequest{State: st, Plan: pl, Config: cf}, resp)
 	if resp.Diagnostics.HasError() {
 		t.Fatal(resp.Diagnostics)
 	}

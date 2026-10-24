@@ -27,6 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -203,10 +205,13 @@ func (r *uciSectionResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "The section's scalar options.",
 			},
 			"lists": rschema.MapAttribute{
-				Optional:    true,
-				ElementType: types.ListType{ElemType: types.StringType},
+				Optional:      true,
+				Computed:      true,
+				ElementType:   types.ListType{ElemType: types.StringType},
+				PlanModifiers: []planmodifier.Map{mapplanmodifier.UseStateForUnknown()},
 				Description: "The section's list options (`list server '...'`), each an ordered list of values. Order is significant: dnsmasq tries `server` entries in order. " +
-					"Omitted, the section's list options are left unmanaged: never read into state and never deleted. " +
+					"Read always records the list options the device holds, on import and on every refresh. " +
+					"Omitted, they are left unmanaged: never written and never deleted. " +
 					"Declared (even as `{}`), the map is authoritative: list options the device holds that it does not name are deleted.",
 			},
 		},
@@ -248,7 +253,7 @@ func (m *uciSectionModel) valueMap(ctx context.Context) (map[string]any, error) 
 	return out, nil
 }
 
-func splitOptions(ctx context.Context, vals map[string]any, priorLists types.Map) (types.Map, types.Map, diag.Diagnostics) {
+func splitOptions(ctx context.Context, vals map[string]any) (types.Map, types.Map, diag.Diagnostics) {
 	scalars := map[string]string{}
 	lists := map[string][]string{}
 	for k, v := range vals {
@@ -271,11 +276,7 @@ func splitOptions(ctx context.Context, vals map[string]any, priorLists types.Map
 	var diags diag.Diagnostics
 	sv, d := types.MapValueFrom(ctx, types.StringType, scalars)
 	diags.Append(d...)
-	listType := types.ListType{ElemType: types.StringType}
-	if priorLists.IsNull() {
-		return sv, types.MapNull(listType), diags
-	}
-	lv, d := types.MapValueFrom(ctx, listType, lists)
+	lv, d := types.MapValueFrom(ctx, types.ListType{ElemType: types.StringType}, lists)
 	diags.Append(d...)
 	return sv, lv, diags
 }
@@ -314,6 +315,9 @@ func (r *uciSectionResource) Create(ctx context.Context, req resource.CreateRequ
 	if err := r.c.commit(ctx, m.Config.ValueString()); err != nil {
 		resp.Diagnostics.AddError("uci commit failed", err.Error())
 		return
+	}
+	if m.Lists.IsUnknown() {
+		m.Lists = types.MapNull(types.ListType{ElemType: types.StringType})
 	}
 	m.ID = types.StringValue(sectionID(m.Config.ValueString(), m.Section.ValueString()))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &m)...)
@@ -357,7 +361,7 @@ func (r *uciSectionResource) Read(ctx context.Context, req resource.ReadRequest,
 		if ty, ok := vals[".type"].(string); ok && ty != "" {
 			m.Type = types.StringValue(ty)
 		}
-		sv, lv, diags := splitOptions(ctx, vals, m.Lists)
+		sv, lv, diags := splitOptions(ctx, vals)
 		resp.Diagnostics.Append(diags...)
 		if !resp.Diagnostics.HasError() {
 			m.Values = sv
@@ -391,13 +395,20 @@ func (r *uciSectionResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	vals, err := m.valueMap(ctx)
+	var declared uciSectionModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &declared)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	write := m
+	if declared.Lists.IsNull() {
+		write.Lists = declared.Lists
+		prior.Lists = declared.Lists
+	}
+	vals, err := write.valueMap(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("invalid values", err.Error())
 		return
-	}
-	if m.Lists.IsNull() {
-		prior.Lists = m.Lists
 	}
 	priorVals, err := prior.valueMap(ctx)
 	if err != nil {
