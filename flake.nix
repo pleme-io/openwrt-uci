@@ -55,7 +55,7 @@
         # helper documents (`modRoot — Go module root within source`).
         modRoot = "provider/terraform";
 
-        vendorHash = "sha256-4di0oi0tXfEVhBCGXugqv09T6rtsWp37p/zBOH+lDhM=";
+        vendorHash = "sha256-HDuiKwhKTSImb/fxuFVrMX3J5O/TncsFkwgY7HGxsHY=";
 
         repo = "pleme-io/openwrt-uci";
 
